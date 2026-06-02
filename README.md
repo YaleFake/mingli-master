@@ -1,6 +1,6 @@
 # 命理解读师.skill
 
-![](assets/musk-mingpan.png)
+![](assets/musk-mingpan.jpg)
 
 > *「Elon Musk 的命盘示例」*
 
@@ -35,7 +35,7 @@
 - **当前大限** — 此阶段核心课题
 - **手相互证** — 掌纹与命盘交叉比对（可选）
 
-**[查看完整示例命盘 →](https://github.com/learnwithu/mingli-master/blob/main/assets/musk-mingpan.png)**
+**[查看完整示例命盘 →](https://github.com/learnwithu/mingli-master/blob/main/assets/musk-mingpan.jpg)**
 
 ---
 
@@ -126,7 +126,7 @@ mingli-master/
 │   ├── stars_reference.md            # 十四主星 + 六吉六煞参考
 │   └── four_hua_reference.md         # 四化飞星参考
 └── assets/
-    └── musk-mingpan.png              # 示例命盘截图
+    └── musk-mingpan.jpg               # 示例命盘截图
 ```
 
 ---
