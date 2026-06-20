@@ -139,6 +139,11 @@
   .vbtn.sel-partial{background:rgba(200,169,110,.2);color:var(--gold);border-color:rgba(200,169,110,.5)}
   .vbtn.sel-miss{background:rgba(155,35,53,.2);color:#FF6B6B;border-color:rgba(155,35,53,.5)}
   .fb-note{font-size:12px;padding:7px 10px}
+  /* 内联反馈（卡片内） */
+  .card-fb{display:flex;align-items:center;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid var(--hair-soft);flex-wrap:wrap}
+  .card-fb .lab{font-size:10px;letter-spacing:2px;color:var(--gold-dim)}
+  .card-fb .note{flex:1;min-width:120px;font-size:11px;padding:5px 9px;background:var(--ink);border:1px solid var(--hair-soft);border-radius:3px;color:var(--ivory);font-family:inherit}
+  .card-fb .note:focus{border-color:var(--gold);outline:none}
   .footer{text-align:center;padding:40px 0 8px}
   .footer-quote{font-family:'Ma Shan Zheng',serif;font-size:18px;color:rgba(200,169,110,.45);letter-spacing:4px;line-height:2}
   .footer-note{font-size:11px;color:rgba(200,169,110,.25);margin-top:12px;letter-spacing:2px}
@@ -200,16 +205,9 @@
       <div class="actions" style="margin-top:0"><button class="btn-ghost btn" id="copyChartBtn">复制排盘 JSON</button></div>
     </details>
 
-    <!-- 反馈 -->
-    <div class="feedback" id="feedbackBox" style="display:none">
-      <h3>反馈校准</h3>
-      <div class="desc">逐维度打分 → 导出 records JSON → 喂给 feedback.py 算胜率。hit=准 / partial=部分 / miss=不准。</div>
-      <div id="fbRows"></div>
-      <div class="actions"><button class="btn" id="exportFbBtn">导出反馈 JSON</button></div>
-    </div>
-
     <div class="actions" style="justify-content:center;margin-bottom:24px">
       <button class="btn" id="downloadBtn">⤓ 下载报告 HTML</button>
+      <button class="btn-ghost btn" id="exportFbBtn">导出反馈记录</button>
       <button class="btn-ghost btn" id="resetBtn">重新排盘</button>
     </div>
 
@@ -407,15 +405,28 @@ $('copyChartBtn').addEventListener('click',()=>{
 });
 
 function renderCards(cards){
+  fbState={};
   let html='<div class="section-title">命盘解读</div><div class="reading-grid">';
   cards.forEach(c=>{
+    const dim=(c.title||'').split('·')[0].trim();
+    fbState[dim]={verdict:null,note:'',confidence:(c.probabilities&&c.probabilities[0]&&c.probabilities[0].pct)||70};
     let cls='rcard';if(c.full)cls+=' full';if(c.highlight)cls+=' hl';if(c.teal)cls+=' teal';
-    html+=`<div class="${cls}"><div class="rcard-title">${c.title||''}</div><div class="rcard-badge">${c.badge||''}</div><div class="rcard-body">${c.body||''}</div></div>`;
+    html+=`<div class="${cls}"><div class="rcard-title">${c.title||''}</div><div class="rcard-badge">${c.badge||''}</div><div class="rcard-body">${c.body||''}</div>`+
+      `<div class="card-fb" data-dim="${dim}"><span class="lab">这段准吗</span>`+
+      `<button class="vbtn" data-v="hit">准</button><button class="vbtn" data-v="partial">部分</button><button class="vbtn" data-v="miss">不准</button>`+
+      `<input class="note" placeholder="补一句（可空）"></div></div>`;
   });
   html+='</div>';
   $('readingArea').innerHTML=html;
-  buildFeedback(cards);
-  $('feedbackBox').style.display='block';
+  $('readingArea').querySelectorAll('.card-fb').forEach(row=>{
+    const dim=row.dataset.dim;
+    row.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{
+      fbState[dim].verdict=b.dataset.v;
+      row.querySelectorAll('.vbtn').forEach(x=>x.className='vbtn');
+      b.className='vbtn sel-'+b.dataset.v;
+    }));
+    row.querySelector('.note').addEventListener('input',e=>{fbState[dim].note=e.target.value;});
+  });
 }
 
 // ===== 规则解读引擎（十四主星 × 宫位，零后端自动生成）=====
@@ -435,17 +446,57 @@ const STAR_LIB={
   '七杀':{core:'将星，刚烈、果断、独立、敢闯，开创力强、不服输',career:'适合开拓、创业、需要魄力的硬仗，越是逆境越有戏',wealth:'<span class="warn">财大起大落，靠拼搏不靠守</span>',love:'重行动、个性强，需要空间，忌被管太死'},
   '破军':{core:'耗星+先锋，破旧立新、不安现状、敢破敢立，人生变动大',career:'适合变革、开创、不走寻常路的领域，旧框架里待不住',wealth:'<span class="warn">财起伏大，先破后立，忌一把梭</span>',love:'感情浓烈但多变，喜新易动，需要主动稳住'}
 };
-const HUA={'禄':'资源到位、有助力、走得顺',' 权':'有掌控、能扛事','权':'有掌控力、能扛事、偏强势','科':'有名声、得贵人、利文书考运','忌':'有执念、易卡顿、是非缠身，需留意'};
+const HUA={'禄':'资源到位、有助力、走得顺','权':'有掌控力、能扛事、偏强势','科':'有名声、得贵人、利文书考运','忌':'有执念、易卡顿、是非缠身，需留意'};
+const JI=['左辅','右弼','文昌','文曲','天魁','天钺'];
+const SHA=['擎羊','陀罗','火星','铃星','地空','地劫'];
+const JI_NOTE={'左辅':'得平辈相助','右弼':'得合作贵人','文昌':'添才学、利文书考运','文曲':'添才艺口才','天魁':'遇长辈贵人','天钺':'遇暗中贵人'};
+const SHA_NOTE={'擎羊':'易冲动、防刑伤是非','陀罗':'易拖延暗耗','火星':'性急、起伏大','铃星':'闷气积压','地空':'易空想、防破财','地劫':'多波折、防劫财'};
+const COMBO={
+ '紫微+天府':{core:'双帝星同宫，气派大、求稳重格局，天生的管理者，爱面子、重地位',career:'适合掌舵、管理、平台型事业，越在高位越稳',wealth:'财库厚、善积累，理财稳健保守',love:'要体面与尊重，伴侣需有分量'},
+ '紫微+贪狼':{core:'帝王配桃花，欲望强、魅力足、好交际，能屈能伸有手腕',career:'适合交际、文创、需要魅力与手腕的领域',wealth:'财路广但讲排场，<span class="warn">忌挥霍</span>',love:'<span class="warn">桃花旺、风流，感情精彩但需自律</span>'},
+ '紫微+天相':{core:'帝王配印星，端正稳重、重体面与规矩，是天生的辅政之才',career:'适合管理、协调、辅佐高层',wealth:'财稳，靠信誉积累',love:'重责任与体面，择偶看条件'},
+ '紫微+七杀':{core:'帝王配将星，「化杀为权」，威严有魄力、能扛大事、说一不二',career:'适合开创、掌权、独当一面的硬仗',wealth:'财大敢拼，起伏中见格局',love:'强势、要主导权，不轻易低头'},
+ '紫微+破军':{core:'帝王配先锋，敢破敢立、不守旧、开创力强但任性',career:'适合变革、创业、打破常规',wealth:'先破后立、起伏大',love:'浓烈而多变，需要新鲜感'},
+ '天机+太阴':{core:'谋士配月亮，心思细密、多谋善感、想象力强，偏内秀',career:'适合策划、文案、研究、幕后智囊',wealth:'财靠脑力与规划，宜稳不宜频动',love:'体贴敏感，<span class="warn">易多想、情绪化</span>'},
+ '天机+巨门':{core:'谋士配口星，口才与脑力俱佳、善辩善析，但易钻牛角尖',career:'适合口才分析类：法律、咨询、媒体',wealth:'靠专业与口才，<span class="warn">忌口舌是非</span>',love:'沟通多也争辩多，需要耐心'},
+ '天机+天梁':{core:'谋士配荫星，聪明又有原则、爱出主意爱管事，机巧中带稳重',career:'适合参谋、监督、医法、教育',wealth:'财平稳，靠智慧与人望',love:'关心人但偏说教'},
+ '太阳+太阴':{core:'日月同临，外热内柔、阴阳兼备，能量与情绪都起伏明显',career:'适合兼顾对外与对内、协调阴阳的角色',wealth:'财有起落，宜动静结合',love:'重情又多情绪，温暖但需稳定'},
+ '太阳+巨门':{core:'「日照雷门」，善表达有感染力，靠口才发光但易招议论',career:'适合演讲、教育、外语、传媒、涉外',wealth:'财在口与名，<span class="warn">忌是非</span>',love:'热情直率，沟通是关键'},
+ '太阳+天梁':{core:'光明磊落、有正义感与长者风，爱照顾人、爱主持公道',career:'适合公职、管理、医法、公益',wealth:'重名轻利，财平稳',love:'有担当但偏家长式'},
+ '武曲+天府':{core:'财星配财库，最务实的「能赚＋会守」组合，稳健精明',career:'适合金融、财务、实业经营',wealth:'<strong>财运极强，能赚善守</strong>',love:'重实际，感情含蓄'},
+ '武曲+贪狼':{core:'财星配欲望，行动力＋企图心，「先勤后发」的拼劲，多主中晚发',career:'适合销售、商贸、需冲劲与应酬的领域',wealth:'财来自打拼与人脉，越拼越旺',love:'现实又多欲，感情来得晚而热'},
+ '武曲+天相':{core:'财星配印星，务实又讲信用，做事稳、重承诺',career:'适合财务、管理、需可靠度的岗位',wealth:'财稳，靠信誉积累',love:'踏实可靠但不够浪漫'},
+ '武曲+七杀':{core:'双将星，刚硬果决、行动力爆表，能成大业但易孤刚',career:'适合开拓、军警、外科、硬派创业',wealth:'<span class="warn">财大起大落，靠魄力</span>',love:'个性刚强，需要柔化'},
+ '武曲+破军':{core:'财星配先锋，敢破敢拼、不安现状，财与人生都大动',career:'适合变革、闯荡、白手起家',wealth:'<span class="warn">先破后立、波动大</span>',love:'浓烈直接，变动多'},
+ '天同+太阴':{core:'福星配月亮，温柔、感性、爱享受、重情调，偏阴柔安逸',career:'适合文艺、服务、需细腻与亲和的事',wealth:'财来平顺，宜守',love:'浪漫深情，<span class="warn">但偏被动需呵护</span>'},
+ '天同+巨门':{core:'福星配口星，嘴甜会聊但内心多虑，福中带些口舌',career:'适合靠沟通与亲和的服务、销售',wealth:'财平，<span class="warn">忌口舌是非</span>',love:'会哄人但易猜疑'},
+ '天同+天梁':{core:'「机月同梁」之稳，随和有福、爱清闲、逢凶化吉',career:'适合稳定、文职、医护、公职',wealth:'财平稳，安稳是福',love:'温和有情，求安定'},
+ '廉贞+天府':{core:'囚星配财库，能干有手腕又会守成，外圆内方',career:'适合管理、财务、需手腕的经营',wealth:'财稳，会算会守',love:'重实际也重情调'},
+ '廉贞+贪狼':{core:'双桃花同宫，魅力与欲望拉满、交际广、才艺多，但易纵情',career:'适合娱乐、交际、才艺、公关',wealth:'财路活，<span class="warn">花得也凶</span>',love:'<span class="warn">桃花极旺，精彩但需自律</span>'},
+ '廉贞+天相':{core:'囚星配印星，外圆内方、重规矩又能变通，是干练的协调者',career:'适合管理、协调、法务、行政',wealth:'财稳，重信用',love:'理性持重，重承诺'},
+ '廉贞+七杀':{core:'囚星配将星，刚烈果敢、敢闯敢拼，「积富之人」但脾气硬',career:'适合开拓、外勤、硬派业务',wealth:'<span class="warn">财靠拼搏，起伏大</span>',love:'个性强烈，爱憎分明'},
+ '廉贞+破军':{core:'囚星配先锋，叛逆敢破、不走寻常路，冲劲足但易冲动',career:'适合变革、创新、非主流领域',wealth:'<span class="warn">起伏大，先破后立</span>',love:'浓烈多变，需要稳住'}
+};
+function comboGet(names,dim){if(names.length<2)return null;const a=names[0],b=names[1];const c=COMBO[a+'+'+b]||COMBO[b+'+'+a];return c?(c[dim]||c.core):null;}
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
 function mkCard(ps,name,dim,title,opts){
   const {p,stars,borrowed}=effStars(ps,name);
   const names=stars.map(s=>s.name);
-  let parts=stars.map(s=>{const lib=STAR_LIB[s.name];let t=lib?lib[dim]:'此星需结合整体判断';if(s.mutagen)t+=` <em>（${s.name}化${s.mutagen}）</em>${HUA[s.mutagen]||''}`;return `<strong>${s.name}</strong>：${t}`;});
-  // 本宫含生年四化的辅星也提一句
-  if(p){(p.minorStars||[]).filter(s=>s.mutagen).forEach(s=>{parts.push(`<em>${s.name}化${s.mutagen}</em>：${HUA[s.mutagen]||''}`);});}
-  let body=parts.join('<br>')||'此宫无主星，需结合三方四正综合判断。';
-  if(borrowed&&names.length)body='<span class="warn">本宫无主星，借对宫取象（仅供参考）。</span><br>'+body;
+  let body;
+  const combo=comboGet(names,dim);
+  if(combo){body=combo;}
+  else if(names.length){body=names.map(n=>STAR_LIB[n]?('<strong>'+n+'</strong>'+STAR_LIB[n][dim]):'').filter(Boolean).join('；又兼');}
+  else{body='此宫无主星，需结合三方四正综合判断。';}
+  // 生年四化（主星+辅星）
+  const muts=[...stars,...(p?p.minorStars:[])].filter(s=>s.mutagen);
+  if(muts.length)body+='<br>'+muts.map(s=>`<em>${s.name}化${s.mutagen}</em>：${HUA[s.mutagen]||''}`).join('；');
+  // 六吉六煞制约
+  const minor=p?p.minorStars.map(s=>s.name):[];
+  const ji=minor.filter(n=>JI.includes(n)),sha=minor.filter(n=>SHA.includes(n));
+  if(ji.length)body+=`<br><span class="good">加 ${ji.join('、')}：${ji.map(n=>JI_NOTE[n]).join('、')}</span>`;
+  if(sha.length)body+=`<br><span class="warn">逢 ${sha.join('、')}：${sha.map(n=>SHA_NOTE[n]).join('、')}</span>`;
+  if(borrowed&&names.length)body='<span class="warn">本宫无主星，借对宫取象（仅参考）。</span><br>'+body;
   return Object.assign({title,badge:names.join('·')||'空宫',body},opts);
 }
 function autoReading(){
@@ -459,8 +510,8 @@ function autoReading(){
   const lp=ps.find(p=>p.earthlyBranch===CURRENT.limitBranch);
   if(lp){
     const names=lp.majorStars.map(s=>s.name);
-    let parts=lp.majorStars.map(s=>{const lib=STAR_LIB[s.name];return `<strong>${s.name}</strong>：${lib?lib.core:''}`;});
-    let body=names.length?('此限走 <em>'+names.join('·')+'</em>，是这十年的主基调：<br>'+parts.join('<br>')+'<br><span class="warn">把握住与这组星相符的方向，避开它的短板。</span>'):'此限宫无主星，借对宫并结合流年综合判断。';
+    let core=comboGet(names,'core')||(names.length?names.map(n=>STAR_LIB[n]?('<strong>'+n+'</strong>'+STAR_LIB[n].core):'').filter(Boolean).join('；又兼'):'');
+    let body=names.length?('此限走 <em>'+names.join('·')+'</em>，是这十年的主基调：<br>'+core+'<br><span class="warn">顺势深耕这组星的强项，规避其短板。</span>'):'此限宫无主星，借对宫并结合流年综合判断。';
     cards.push({title:'当前大限 · 课题',badge:names.join('·')||'空宫',body,teal:true});
   }
   renderCards(cards);
