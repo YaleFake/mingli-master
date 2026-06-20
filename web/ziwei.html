@@ -192,19 +192,13 @@
     <div class="section-title">十二宫位分布</div>
     <div class="palace-grid" id="palaceGrid"></div>
 
-    <!-- 解读输入 -->
-    <div class="reading-input" id="readingInput">
-      <h3>解读（Claude 在环）</h3>
-      <p>1) 点「复制排盘给 Claude」，把排盘数据发给 Claude 出解读 → 2) 把返回的 reading.json 粘贴到下面 → 3) 点「渲染解读」。</p>
-      <div class="copybox" id="chartJsonBox"></div>
-      <div class="actions" style="margin:0 0 14px">
-        <button class="btn-ghost btn" id="copyChartBtn">复制排盘给 Claude</button>
-      </div>
-      <textarea id="readingJson" placeholder='粘贴 reading.json，如 {"cards":[...],"calibration_questions":[...]}'></textarea>
-      <div class="actions" style="margin-top:12px"><button class="btn" id="renderReadingBtn">渲染解读</button></div>
-    </div>
-
     <div id="readingArea"></div>
+
+    <details class="reading-input" id="advBox">
+      <summary style="cursor:pointer;color:var(--gold);font-size:13px;letter-spacing:1px">排盘数据（高级 · 可复制做深度解读）</summary>
+      <div class="copybox" id="chartJsonBox" style="margin-top:14px"></div>
+      <div class="actions" style="margin-top:0"><button class="btn-ghost btn" id="copyChartBtn">复制排盘 JSON</button></div>
+    </details>
 
     <!-- 反馈 -->
     <div class="feedback" id="feedbackBox" style="display:none">
@@ -320,6 +314,7 @@ $('goBtn').addEventListener('click',async()=>{
 
   CURRENT={code,gender,cal,leap,dateStr,timeStr,lon,manual,hourIdx,solarForChart,corr,chart};
   renderReport(chart,corr,{code,solarForChart,hourIdx,gender,lon,trueSolar:corr&&corr.trueDt?`${fmt(corr.trueDt)} ${String(corr.trueDt.getHours()).padStart(2,'0')}:${String(corr.trueDt.getMinutes()).padStart(2,'0')}`:null});
+  autoReading();
   $('loading').classList.remove('on');
   $('report').classList.add('on');
   $('report').scrollIntoView({behavior:'smooth'});
@@ -396,6 +391,7 @@ function renderReport(chart,corr,meta){
     palaces:palaces.map(p=>({name:p.name,branch:p.earthlyBranch,major:(p.majorStars||[]).map(s=>s.name+(s.mutagen?'化'+s.mutagen:'')),minor:(p.minorStars||[]).map(s=>s.name+(s.mutagen?'化'+s.mutagen:''))}))
   };
   CURRENT.chartExport=chartExport;
+  CURRENT.limitBranch=limitBranch;
   $('chartJsonBox').textContent=JSON.stringify(chartExport,null,2);
 }
 
@@ -407,17 +403,12 @@ function buildCenter(chart,yearHua,five){
 
 // ---------- 解读渲染 ----------
 $('copyChartBtn').addEventListener('click',()=>{
-  const prompt='请按 mingli-master 的 reading.json 格式，为以下排盘生成有温度的解读（cards + calibration_questions），直接返回 JSON：\n\n'+JSON.stringify(CURRENT.chartExport,null,2);
-  navigator.clipboard.writeText(prompt).then(()=>{$('copyChartBtn').textContent='已复制 ✓';setTimeout(()=>$('copyChartBtn').textContent='复制排盘给 Claude',1800);});
+  navigator.clipboard.writeText(JSON.stringify(CURRENT.chartExport,null,2)).then(()=>{$('copyChartBtn').textContent='已复制 ✓';setTimeout(()=>$('copyChartBtn').textContent='复制排盘 JSON',1800);});
 });
 
-$('renderReadingBtn').addEventListener('click',()=>{
-  clearErr();
-  let data;
-  try{data=JSON.parse($('readingJson').value);}catch(e){showErr('reading.json 解析失败：'+e.message);return;}
-  const cards=data.cards||[];
+function renderCards(cards){
   let html='<div class="section-title">命盘解读</div><div class="reading-grid">';
-  cards.forEach((c,i)=>{
+  cards.forEach(c=>{
     let cls='rcard';if(c.full)cls+=' full';if(c.highlight)cls+=' hl';if(c.teal)cls+=' teal';
     html+=`<div class="${cls}"><div class="rcard-title">${c.title||''}</div><div class="rcard-badge">${c.badge||''}</div><div class="rcard-body">${c.body||''}</div></div>`;
   });
@@ -425,8 +416,57 @@ $('renderReadingBtn').addEventListener('click',()=>{
   $('readingArea').innerHTML=html;
   buildFeedback(cards);
   $('feedbackBox').style.display='block';
-  $('readingArea').scrollIntoView({behavior:'smooth'});
-});
+}
+
+// ===== 规则解读引擎（十四主星 × 宫位，零后端自动生成）=====
+const STAR_LIB={
+  '紫微':{core:'帝王星，天生有气场和领导欲，爱面子、重格局、希望被认可',career:'适合做主导、管理、决策的角色，越在高位越自在',wealth:'格局大，财随地位和平台走，需有辅星助力',love:'要的是被尊重和体面，伴侣最好能撑得起你的场面'},
+  '天机':{core:'谋士星，脑子转得快、善谋划、爱思考，永远在想「下一步」',career:'适合策划、咨询、技术、参谋类，靠脑子吃饭',wealth:'财来自智慧和规划，忌频繁折腾、起念太快',love:'<span class="warn">想得多、心思细，容易因为想太多而内耗纠结</span>'},
+  '太阳':{core:'光热之星，热情、博爱、爱付出、好面子，天生想照亮别人',career:'适合台前、公众、有影响力的事业，越被看见越顺',wealth:'重名大于重利，财在声望与影响力里',love:'付出型，对感情大方，但有时大而化之、顾不上细节'},
+  '武曲':{core:'财星+将星，务实、刚毅、行动力强、重结果不重情调',career:'适合金融、实业、销售、技术、军警等硬派领域',wealth:'<strong>正财星，最会赚钱也最会理财</strong>，靠实干稳稳积累',love:'<span class="warn">偏直、不善表达，重行动轻甜言，需有意识地软化</span>'},
+  '天同':{core:'福星，温和、随性、知足、有点孩子气，福气在「不争」',career:'适合稳定、轻松、服务类，不爱厮杀，忌过于安逸',wealth:'财来得平顺，够用就好，留意被动与懒散',love:'纯粹、重情调，但偏被动，需要对方主动推一把'},
+  '廉贞':{core:'囚星+次桃花，复杂多面、有才情也有脾气，能交际能钻研',career:'适合需要交际、才艺、技术钻研的领域，能在复杂局里周旋',wealth:'财路活但有起伏，忌偏门与冲动',love:'<span class="warn">桃花重，感情浓烈也容易波动</span>'},
+  '天府':{core:'财库星，稳重、保守、爱安稳、有包容力，天生「守成之才」',career:'适合管理、财务、稳健经营，是让人放心的掌柜型',wealth:'<strong>财库星，善守善积累</strong>，理财保守稳健、越攒越厚',love:'求安稳，伴侣要可靠、能给安全感'},
+  '太阴':{core:'月亮星，内敛、细腻、直觉强、重情，主财富与不动产',career:'适合幕后、文艺、地产、需要细致用心的事，女命尤显',wealth:'主田宅不动产，财在长期积累与置业',love:'温柔重情，<span class="warn">但情绪起伏需要被理解和关照</span>'},
+  '贪狼':{core:'欲望星+桃花，多才多艺、欲望强、应酬能力顶级、爱热闹',career:'适合交际、娱乐、销售、才艺变现，人脉就是资源',wealth:'财路广但花得也快，<span class="warn">忌赌性与贪多</span>',love:'<span class="warn">桃花最旺，魅力强、选择多，定下来比遇到难</span>'},
+  '巨门':{core:'暗星+口星，善表达、爱钻研、嘴上功夫强，但易招口舌',career:'适合靠嘴吃饭：教育、销售、法律、咨询、自媒体',wealth:'财靠口才与专业沉淀，忌卷入是非',love:'沟通是钥匙也是雷区，<span class="warn">说清则甜，说不清就拧</span>'},
+  '天相':{core:'印星，诚信、重审美、爱协调、心软怕冲突，天生可托付',career:'适合辅佐、协调、审美相关，是极靠谱的二把手',wealth:'财平稳，靠信用和口碑积累',love:'重承诺、易心软，<span class="warn">怕冲突、容易替对方扛</span>'},
+  '天梁':{core:'荫星，稳重、有原则、爱照顾人、有长者气，逢凶能化吉',career:'适合管理、医疗、法律、监督、公职等需要担当的角色',wealth:'财平稳，不爱冒险，往往老来更佳',love:'有责任感、靠得住，<span class="warn">但有时偏说教、像家长</span>'},
+  '七杀':{core:'将星，刚烈、果断、独立、敢闯，开创力强、不服输',career:'适合开拓、创业、需要魄力的硬仗，越是逆境越有戏',wealth:'<span class="warn">财大起大落，靠拼搏不靠守</span>',love:'重行动、个性强，需要空间，忌被管太死'},
+  '破军':{core:'耗星+先锋，破旧立新、不安现状、敢破敢立，人生变动大',career:'适合变革、开创、不走寻常路的领域，旧框架里待不住',wealth:'<span class="warn">财起伏大，先破后立，忌一把梭</span>',love:'感情浓烈但多变，喜新易动，需要主动稳住'}
+};
+const HUA={'禄':'资源到位、有助力、走得顺',' 权':'有掌控、能扛事','权':'有掌控力、能扛事、偏强势','科':'有名声、得贵人、利文书考运','忌':'有执念、易卡顿、是非缠身，需留意'};
+function palByName(ps,n){return ps.find(p=>p.name===n);}
+function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
+function mkCard(ps,name,dim,title,opts){
+  const {p,stars,borrowed}=effStars(ps,name);
+  const names=stars.map(s=>s.name);
+  let parts=stars.map(s=>{const lib=STAR_LIB[s.name];let t=lib?lib[dim]:'此星需结合整体判断';if(s.mutagen)t+=` <em>（${s.name}化${s.mutagen}）</em>${HUA[s.mutagen]||''}`;return `<strong>${s.name}</strong>：${t}`;});
+  // 本宫含生年四化的辅星也提一句
+  if(p){(p.minorStars||[]).filter(s=>s.mutagen).forEach(s=>{parts.push(`<em>${s.name}化${s.mutagen}</em>：${HUA[s.mutagen]||''}`);});}
+  let body=parts.join('<br>')||'此宫无主星，需结合三方四正综合判断。';
+  if(borrowed&&names.length)body='<span class="warn">本宫无主星，借对宫取象（仅供参考）。</span><br>'+body;
+  return Object.assign({title,badge:names.join('·')||'空宫',body},opts);
+}
+function autoReading(){
+  const ps=CURRENT.chart.palaces;
+  const cards=[];
+  cards.push(mkCard(ps,'命宫','core','命盘底色 · 先天禀赋',{full:true,highlight:true,probabilities:[{label:'推算置信度',pct:66},{label:'校准后可达',pct:85}]}));
+  cards.push(mkCard(ps,'官禄','career','事业 · 官禄宫',{teal:true}));
+  cards.push(mkCard(ps,'财帛','wealth','财运 · 财帛宫',{}));
+  cards.push(mkCard(ps,'夫妻','love','感情 · 夫妻宫',{}));
+  // 当前大限
+  const lp=ps.find(p=>p.earthlyBranch===CURRENT.limitBranch);
+  if(lp){
+    const names=lp.majorStars.map(s=>s.name);
+    let parts=lp.majorStars.map(s=>{const lib=STAR_LIB[s.name];return `<strong>${s.name}</strong>：${lib?lib.core:''}`;});
+    let body=names.length?('此限走 <em>'+names.join('·')+'</em>，是这十年的主基调：<br>'+parts.join('<br>')+'<br><span class="warn">把握住与这组星相符的方向，避开它的短板。</span>'):'此限宫无主星，借对宫并结合流年综合判断。';
+    cards.push({title:'当前大限 · 课题',badge:names.join('·')||'空宫',body,teal:true});
+  }
+  renderCards(cards);
+  // 自动加一句免责
+  $('readingArea').insertAdjacentHTML('beforeend','<p style="font-size:11px;color:var(--ivory-dim);opacity:.6;margin:-24px 0 32px;letter-spacing:1px">※ 解读由规则引擎自动生成，命盘显示倾向与概率，非定论。深度个性化解读敬请期待。</p>');
+}
 
 // ---------- 反馈 ----------
 const DIMS=['命盘底色','事业','财运','感情','当前大限','健康','六亲','流年'];
