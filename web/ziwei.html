@@ -307,10 +307,11 @@ $('goBtn').addEventListener('click',async()=>{
   $('loading').classList.add('on');
   await new Promise(r=>setTimeout(r,900)); // 让动画喘口气
 
+  const genderCN = gender==='male'?'男':'女';
   let chart;
   try{
-    if(cal==='lunar') chart=astro.byLunar(dateStr,hourIdx,gender,leap,true,'zh-CN');
-    else chart=astro.bySolar(solarForChart,hourIdx,gender,'zh-CN');
+    if(cal==='lunar') chart=astro.byLunar(dateStr,hourIdx,genderCN,leap,true,'zh-CN');
+    else chart=astro.bySolar(solarForChart,hourIdx,genderCN,true,'zh-CN');
   }catch(err){
     $('formCard').style.display='block';
     showErr('排盘失败：'+(err&&err.message?err.message:err)+'\n请检查日期格式（YYYY-M-D）。');
