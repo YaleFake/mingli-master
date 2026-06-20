@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>命盘解读 · {{YEAR_STEM}}{{YEAR_BRANCH}}年{{HOUR_NAME}}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #C8A96E;
@@ -12,183 +12,227 @@
     --gold-dim: #8B7245;
     --crimson: #9B2335;
     --crimson-bright: #C42B3F;
-    --ink: #0A0A0F;
-    --ink-mid: #12121A;
+    --ink: #07070C;
+    --ink-mid: #101018;
     --ink-light: #1C1C2A;
     --ivory: #F2EBD9;
     --ivory-dim: #B8AA90;
     --teal: #3B7A85;
     --teal-light: #5BA8B5;
+    --hair: rgba(200,169,110,0.18);
+    --hair-soft: rgba(200,169,110,0.10);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   body {
     background: var(--ink);
     color: var(--ivory);
     font-family: 'Noto Serif SC', serif;
+    font-weight: 300;
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
+  /* 底层光晕 */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse at 20% 20%, rgba(60,40,100,0.3) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 80%, rgba(40,20,60,0.4) 0%, transparent 60%),
-      radial-gradient(ellipse at 50% 0%, rgba(155,35,53,0.1) 0%, transparent 50%);
+      radial-gradient(ellipse at 18% 15%, rgba(60,40,100,0.32) 0%, transparent 58%),
+      radial-gradient(ellipse at 82% 85%, rgba(40,20,60,0.42) 0%, transparent 58%),
+      radial-gradient(ellipse at 50% -5%, rgba(155,35,53,0.12) 0%, transparent 48%);
     pointer-events: none;
     z-index: 0;
   }
 
+  /* 颗粒噪点 */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
     opacity: 0.4;
     pointer-events: none;
     z-index: 0;
+  }
+
+  /* 微动星野 —— 三层不同密度/节奏的星点，缓慢明灭 */
+  .starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .starfield span {
+    position: absolute; inset: 0; display: block;
+    background-repeat: repeat;
+  }
+  .stars-1 {
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(242,235,217,0.9), transparent),
+      radial-gradient(1px 1px at 67% 14%, rgba(242,235,217,0.7), transparent),
+      radial-gradient(1px 1px at 34% 71%, rgba(200,169,110,0.8), transparent),
+      radial-gradient(1px 1px at 88% 64%, rgba(242,235,217,0.7), transparent),
+      radial-gradient(1px 1px at 51% 43%, rgba(242,235,217,0.6), transparent);
+    background-size: 100% 100%;
+    animation: twinkle 6s ease-in-out infinite;
+  }
+  .stars-2 {
+    background-image:
+      radial-gradient(1.4px 1.4px at 23% 56%, rgba(232,201,126,0.9), transparent),
+      radial-gradient(1.4px 1.4px at 78% 33%, rgba(242,235,217,0.85), transparent),
+      radial-gradient(1.4px 1.4px at 44% 88%, rgba(242,235,217,0.7), transparent),
+      radial-gradient(1.4px 1.4px at 9% 78%, rgba(200,169,110,0.8), transparent);
+    background-size: 100% 100%;
+    animation: twinkle 9s ease-in-out 1.5s infinite;
+  }
+  .stars-3 {
+    background-image:
+      radial-gradient(2px 2px at 60% 78%, rgba(232,201,126,0.95), transparent),
+      radial-gradient(2px 2px at 30% 20%, rgba(242,235,217,0.9), transparent),
+      radial-gradient(2px 2px at 85% 50%, rgba(200,169,110,0.85), transparent);
+    background-size: 100% 100%;
+    animation: drift 14s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { opacity: 0.35; } 50% { opacity: 0.95; } }
+  @keyframes drift { 0%,100% { opacity: 0.5; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .stars-1, .stars-2, .stars-3 { animation: none; }
   }
 
   .container {
     position: relative;
     z-index: 1;
-    max-width: 900px;
+    max-width: 920px;
     margin: 0 auto;
     padding: 40px 24px 80px;
   }
 
+  /* HEADER */
   .header {
     text-align: center;
-    padding: 60px 0 40px;
+    padding: 64px 0 36px;
     animation: fadeDown 1s ease both;
   }
-
   .header-eyebrow {
     font-size: 11px;
-    letter-spacing: 6px;
+    letter-spacing: 7px;
     color: var(--gold-dim);
     text-transform: uppercase;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
-
   .header-title {
     font-family: 'Ma Shan Zheng', serif;
-    font-size: clamp(36px, 6vw, 58px);
+    font-size: clamp(38px, 6vw, 62px);
     color: var(--gold);
-    line-height: 1.2;
+    line-height: 1.18;
     margin-bottom: 8px;
-    text-shadow: 0 0 40px rgba(200,169,110,0.3);
+    text-shadow: 0 0 44px rgba(200,169,110,0.35);
   }
-
+  /* 标题下的烫金小饰线 */
+  .header-ornament {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin: 14px 0 6px; color: var(--gold); opacity: 0.7;
+  }
+  .header-ornament::before, .header-ornament::after {
+    content: ''; width: 56px; height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold));
+  }
+  .header-ornament::after { background: linear-gradient(to left, transparent, var(--gold)); }
+  .header-ornament span { font-size: 12px; letter-spacing: 2px; }
   .header-sub {
     font-size: 13px;
     color: var(--ivory-dim);
-    letter-spacing: 3px;
-    margin-top: 12px;
+    letter-spacing: 4px;
+    margin-top: 14px;
   }
 
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 32px 0;
-    opacity: 0.4;
-  }
-  .divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--gold));
-  }
-  .divider::after { background: linear-gradient(to left, transparent, var(--gold)); }
-  .divider span { font-size: 14px; color: var(--gold); }
-
+  /* INFO BAR */
   .info-bar {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    background: rgba(200,169,110,0.15);
-    border: 1px solid rgba(200,169,110,0.2);
-    border-radius: 2px;
+    background: var(--hair);
+    border: 1px solid var(--hair);
+    border-radius: 3px;
+    overflow: hidden;
     margin-bottom: 48px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45);
     animation: fadeUp 1s 0.2s ease both;
   }
-
   .info-cell {
     background: var(--ink-mid);
-    padding: 20px 16px;
+    padding: 22px 16px;
     text-align: center;
+    transition: background 0.3s;
   }
-
+  .info-cell:hover { background: var(--ink-light); }
   .info-cell-label {
     font-size: 10px;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
     color: var(--gold-dim);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-
   .info-cell-value {
-    font-size: 16px;
+    font-size: 17px;
     color: var(--gold);
     font-weight: 600;
   }
 
+  /* SECTION TITLE */
   .section-title {
     font-size: 11px;
-    letter-spacing: 5px;
+    letter-spacing: 6px;
     color: var(--gold-dim);
     text-transform: uppercase;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+  }
+  .section-title::before {
+    content: '✦'; font-size: 10px; color: var(--gold); opacity: 0.7;
   }
   .section-title::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(200,169,110,0.2);
+    background: var(--hair);
   }
 
+  /* PALACE GRID */
   .palace-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, auto);
     gap: 1px;
-    background: rgba(200,169,110,0.1);
-    border: 1px solid rgba(200,169,110,0.15);
+    background: var(--hair-soft);
+    border: 1px solid var(--hair);
+    border-radius: 3px;
+    overflow: hidden;
     margin-bottom: 48px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45);
     animation: fadeUp 1s 0.3s ease both;
   }
-
   .palace {
     background: var(--ink-mid);
     padding: 14px 12px;
-    min-height: 100px;
+    min-height: 108px;
     position: relative;
-    transition: background 0.3s;
+    transition: background 0.3s, box-shadow 0.3s;
   }
-
-  .palace:hover { background: var(--ink-light); }
-
+  .palace:hover { background: var(--ink-light); box-shadow: inset 0 0 0 1px var(--hair); }
   .palace.active {
-    background: rgba(155,35,53,0.15);
-    border: 1px solid rgba(155,35,53,0.4);
-    margin: -1px;
+    background: rgba(155,35,53,0.16);
+    box-shadow: inset 0 0 0 1px rgba(196,43,63,0.55), 0 0 24px rgba(155,35,53,0.25);
     z-index: 2;
   }
-
   .palace.current-limit {
-    background: rgba(59,122,133,0.12);
-    border: 1px solid rgba(91,168,181,0.3);
-    margin: -1px;
+    background: rgba(59,122,133,0.13);
+    box-shadow: inset 0 0 0 1px rgba(91,168,181,0.45);
     z-index: 2;
   }
-
   .palace-name {
     font-size: 9px;
     letter-spacing: 2px;
@@ -196,38 +240,24 @@
     margin-bottom: 8px;
     opacity: 0.6;
   }
-
   .palace-dizhi {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 11px;
+    right: 11px;
     font-size: 11px;
     color: var(--gold-dim);
-    opacity: 0.5;
+    opacity: 0.55;
   }
-
-  .palace-stars {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 4px;
-  }
-
-  .star {
-    font-size: 13px;
-    color: var(--ivory);
-    font-weight: 600;
-  }
-
-  .star.main { color: var(--gold); font-size: 14px; }
+  .palace-stars { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .star { font-size: 13px; color: var(--ivory); font-weight: 500; }
+  .star.main { color: var(--gold-light); font-size: 14px; font-weight: 600; }
   .star.four-hua { color: var(--crimson-bright); font-size: 11px; }
   .star.empty { color: var(--ivory-dim); opacity: 0.3; font-size: 11px; font-style: italic; }
-
   .palace-badge {
     display: inline-block;
     font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 1px;
+    padding: 2px 7px;
+    border-radius: 2px;
     margin-top: 6px;
     letter-spacing: 1px;
   }
@@ -235,39 +265,41 @@
   .badge-limit { background: rgba(59,122,133,0.3); color: var(--teal-light); border: 1px solid rgba(59,122,133,0.5); }
   .badge-body { background: rgba(100,120,200,0.3); color: #7BA8F0; border: 1px solid rgba(100,120,200,0.5); }
 
+  /* CENTER */
   .palace-center {
     grid-column: 2 / 4;
     grid-row: 2 / 4;
-    background: rgba(10,10,15,0.8);
+    background: radial-gradient(ellipse at center, rgba(20,18,30,0.9), rgba(7,7,12,0.92));
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 24px;
     position: relative;
-    border: 1px solid rgba(200,169,110,0.1);
+    box-shadow: inset 0 0 0 1px var(--hair-soft);
   }
-
   .center-bagua {
-    font-size: 48px;
-    opacity: 0.15;
+    font-size: 56px;
+    opacity: 0.14;
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: none;
+    animation: spin 60s linear infinite;
   }
-
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .center-bagua { animation: none; } }
   .center-title {
     font-family: 'Ma Shan Zheng', serif;
-    font-size: 22px;
+    font-size: 24px;
     color: var(--gold);
     margin-bottom: 12px;
     position: relative;
     z-index: 1;
+    text-shadow: 0 0 24px rgba(200,169,110,0.3);
   }
-
   .center-info {
     font-size: 11px;
     color: var(--ivory-dim);
@@ -276,26 +308,14 @@
     position: relative;
     z-index: 1;
   }
-
-  .four-hua-bar {
-    display: flex;
-    gap: 2px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .hua-tag {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 1px;
-    letter-spacing: 1px;
-  }
+  .four-hua-bar { display: flex; gap: 4px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+  .hua-tag { font-size: 10px; padding: 3px 9px; border-radius: 2px; letter-spacing: 1px; }
   .hua-lu { background: rgba(100,180,80,0.15); color: #7CCC60; border: 1px solid rgba(100,180,80,0.3); }
   .hua-quan { background: rgba(200,169,110,0.15); color: var(--gold); border: 1px solid rgba(200,169,110,0.3); }
   .hua-ke { background: rgba(80,120,200,0.15); color: #7BA8F0; border: 1px solid rgba(80,120,200,0.3); }
   .hua-ji { background: rgba(155,35,53,0.2); color: #FF6B6B; border: 1px solid rgba(155,35,53,0.4); }
 
+  /* READING CARDS */
   .reading-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -303,224 +323,135 @@
     margin-bottom: 48px;
     animation: fadeUp 1s 0.5s ease both;
   }
-
   .reading-card {
     background: var(--ink-mid);
-    border: 1px solid rgba(200,169,110,0.1);
-    padding: 24px;
+    border: 1px solid var(--hair-soft);
+    border-radius: 3px;
+    padding: 26px 26px 24px;
     position: relative;
     overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
   }
-
+  /* 左侧烫金竖纹 */
+  .reading-card::after {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, var(--gold), transparent 70%);
+    opacity: 0.5;
+  }
+  .reading-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    border-color: var(--hair);
+  }
   .reading-card::before {
     content: attr(data-num);
     position: absolute;
-    right: 16px;
-    top: 12px;
+    right: 18px;
+    top: 10px;
     font-family: 'Ma Shan Zheng', serif;
-    font-size: 48px;
+    font-size: 52px;
     color: var(--gold);
     opacity: 0.06;
   }
-
   .reading-card.full { grid-column: 1 / -1; }
   .reading-card.highlight { border-color: rgba(155,35,53,0.3); background: rgba(155,35,53,0.05); }
+  .reading-card.highlight::after { background: linear-gradient(to bottom, var(--crimson-bright), transparent 70%); }
   .reading-card.teal-highlight { border-color: rgba(59,122,133,0.3); background: rgba(59,122,133,0.05); }
-
-  .card-title {
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--gold-dim);
-    margin-bottom: 16px;
-    text-transform: uppercase;
-  }
-
-  .card-stars-badge {
-    font-size: 18px;
-    color: var(--gold);
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-
-  .card-body {
-    font-size: 13.5px;
-    line-height: 2;
-    color: var(--ivory-dim);
-  }
-
+  .reading-card.teal-highlight::after { background: linear-gradient(to bottom, var(--teal-light), transparent 70%); }
+  .card-title { font-size: 11px; letter-spacing: 4px; color: var(--gold-dim); margin-bottom: 16px; text-transform: uppercase; }
+  .card-stars-badge { font-size: 19px; color: var(--gold); font-weight: 600; margin-bottom: 14px; }
+  .card-body { font-size: 13.5px; line-height: 2.05; color: var(--ivory-dim); }
   .card-body strong { color: var(--ivory); font-weight: 600; }
   .card-body em { color: var(--gold); font-style: normal; }
   .card-body .warn { color: #FF8C60; }
   .card-body .good { color: #7CCC60; }
 
-  .prob-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-  }
-  .prob-label { font-size: 11px; color: var(--ivory-dim); width: 80px; flex-shrink: 0; }
-  .prob-track {
-    flex: 1;
-    height: 3px;
-    background: rgba(200,169,110,0.1);
-    border-radius: 2px;
-  }
-  .prob-fill {
-    height: 100%;
-    background: linear-gradient(to right, var(--gold-dim), var(--gold));
-    border-radius: 2px;
-  }
-  .prob-pct { font-size: 12px; color: var(--gold); width: 36px; text-align: right; flex-shrink: 0; }
+  .prob-bar { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .prob-label { font-size: 11px; color: var(--ivory-dim); width: 84px; flex-shrink: 0; }
+  .prob-track { flex: 1; height: 3px; background: rgba(200,169,110,0.1); border-radius: 2px; overflow: hidden; }
+  .prob-fill { height: 100%; background: linear-gradient(to right, var(--gold-dim), var(--gold-light)); border-radius: 2px; }
+  .prob-pct { font-size: 12px; color: var(--gold); width: 38px; text-align: right; flex-shrink: 0; }
 
+  /* HAND */
   .hand-section {
     background: var(--ink-mid);
-    border: 1px solid rgba(200,169,110,0.1);
+    border: 1px solid var(--hair-soft);
+    border-radius: 3px;
     padding: 28px;
     margin-bottom: 48px;
     animation: fadeUp 1s 0.6s ease both;
   }
-
-  .hand-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-top: 20px;
-  }
-
-  .hand-card {
-    padding: 16px;
-    border: 1px solid rgba(200,169,110,0.08);
-    background: rgba(0,0,0,0.2);
-  }
-
-  .hand-card-title {
-    font-size: 12px;
-    color: var(--gold);
-    margin-bottom: 8px;
-    letter-spacing: 2px;
-  }
-
-  .hand-card-body {
-    font-size: 12px;
-    color: var(--ivory-dim);
-    line-height: 1.9;
-  }
-
-  .conflict-tag {
-    display: inline-block;
-    font-size: 9px;
-    padding: 2px 8px;
-    border-radius: 1px;
-    margin-top: 6px;
-    letter-spacing: 1px;
-  }
+  .hand-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .hand-card { padding: 18px; border: 1px solid var(--hair-soft); border-radius: 3px; background: rgba(0,0,0,0.22); }
+  .hand-card-title { font-size: 12px; color: var(--gold); margin-bottom: 8px; letter-spacing: 2px; }
+  .hand-card-body { font-size: 12px; color: var(--ivory-dim); line-height: 1.95; }
+  .conflict-tag { display: inline-block; font-size: 9px; padding: 2px 8px; border-radius: 2px; margin-top: 8px; letter-spacing: 1px; }
   .match { background: rgba(80,180,80,0.15); color: #7CCC60; border: 1px solid rgba(80,180,80,0.3); }
   .conflict { background: rgba(200,100,50,0.15); color: #FF9060; border: 1px solid rgba(200,100,50,0.3); }
 
+  /* CALIBRATION */
   .calibration {
     border: 1px solid rgba(200,169,110,0.25);
-    padding: 32px;
-    background: linear-gradient(135deg, rgba(200,169,110,0.03), rgba(59,122,133,0.05));
+    border-radius: 3px;
+    padding: 34px;
+    background: linear-gradient(135deg, rgba(200,169,110,0.04), rgba(59,122,133,0.06));
     margin-bottom: 48px;
     animation: fadeUp 1s 0.7s ease both;
   }
+  .cal-title { font-family: 'Ma Shan Zheng', serif; font-size: 24px; color: var(--gold); margin-bottom: 8px; }
+  .cal-desc { font-size: 12px; color: var(--ivory-dim); margin-bottom: 26px; letter-spacing: 1px; }
+  .cal-questions { display: flex; flex-direction: column; gap: 16px; }
+  .cal-q { display: flex; gap: 16px; align-items: flex-start; }
+  .cal-num { font-size: 20px; color: rgba(200,169,110,0.35); font-weight: 700; flex-shrink: 0; width: 28px; font-family: 'Ma Shan Zheng', serif; }
+  .cal-text { font-size: 14px; color: var(--ivory); line-height: 1.8; padding-top: 2px; }
+  .cal-text span { font-size: 11px; color: var(--ivory-dim); display: block; margin-top: 4px; }
 
-  .cal-title {
-    font-family: 'Ma Shan Zheng', serif;
-    font-size: 22px;
-    color: var(--gold);
-    margin-bottom: 8px;
-  }
+  /* FOOTER */
+  .footer { text-align: center; padding: 44px 0 8px; animation: fadeUp 1s 0.8s ease both; }
+  .footer-quote { font-family: 'Ma Shan Zheng', serif; font-size: 19px; color: rgba(200,169,110,0.45); letter-spacing: 4px; line-height: 2; }
+  .footer-note { font-size: 11px; color: rgba(200,169,110,0.25); margin-top: 14px; letter-spacing: 2px; }
 
-  .cal-desc {
-    font-size: 12px;
-    color: var(--ivory-dim);
-    margin-bottom: 24px;
-    letter-spacing: 1px;
-  }
-
-  .cal-questions {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .cal-q {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .cal-num {
-    font-size: 18px;
-    color: rgba(200,169,110,0.3);
-    font-weight: 700;
-    flex-shrink: 0;
-    width: 28px;
-    font-family: 'Ma Shan Zheng', serif;
-  }
-
-  .cal-text {
-    font-size: 14px;
-    color: var(--ivory);
-    line-height: 1.8;
-    padding-top: 2px;
-  }
-
-  .cal-text span {
-    font-size: 11px;
-    color: var(--ivory-dim);
-    display: block;
-    margin-top: 4px;
-  }
-
-  .footer {
-    text-align: center;
-    padding: 40px 0;
-    animation: fadeUp 1s 0.8s ease both;
-  }
-
-  .footer-quote {
-    font-family: 'Ma Shan Zheng', serif;
-    font-size: 18px;
-    color: rgba(200,169,110,0.4);
-    letter-spacing: 4px;
-    line-height: 2;
-  }
-
-  .footer-note {
-    font-size: 11px;
-    color: rgba(200,169,110,0.2);
-    margin-top: 12px;
-    letter-spacing: 2px;
-  }
-
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
   @media (max-width: 620px) {
+    .container { padding: 24px 14px 60px; }
     .reading-grid { grid-template-columns: 1fr; }
     .hand-grid { grid-template-columns: 1fr 1fr; }
     .info-bar { grid-template-columns: 1fr 1fr; }
     .palace-grid { grid-template-columns: repeat(3, 1fr); font-size: 12px; }
     .palace-center { display: none; }
   }
+
+  /* 打印 / 导出 PDF —— 客户报告用 */
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    html, body { background: var(--ink) !important; }
+    .starfield, .center-bagua { animation: none !important; }
+    .header { padding: 12px 0 20px; }
+    .info-bar, .palace-grid, .reading-card, .hand-section, .calibration { box-shadow: none !important; }
+    .reading-card, .palace, .calibration, .hand-section { break-inside: avoid; page-break-inside: avoid; }
+    .reading-card:hover { transform: none; }
+    .section-title { break-after: avoid; }
+    .footer { padding: 20px 0; }
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
+<div class="starfield" aria-hidden="true">
+  <span class="stars-1"></span>
+  <span class="stars-2"></span>
+  <span class="stars-3"></span>
+</div>
 <div class="container">
 
   <!-- HEADER -->
   <div class="header">
     <div class="header-eyebrow">紫微三合 × 中州派 × 手相互证</div>
     <div class="header-title">命盘解读</div>
+    <div class="header-ornament"><span>✦</span></div>
     <div class="header-sub">{{LUNAR_DATE}} · {{HOUR_NAME}} · {{GENDER}}命</div>
   </div>
 
