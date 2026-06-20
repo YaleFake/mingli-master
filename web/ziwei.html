@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>命理解读师 · 在线排盘</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#C8A96E;--gold-light:#E8C97E;--gold-dim:#8B7245;
+    --crimson:#9B2335;--crimson-bright:#C42B3F;
+    --ink:#07070C;--ink-mid:#101018;--ink-light:#1C1C2A;
+    --ivory:#F2EBD9;--ivory-dim:#B8AA90;--teal:#3B7A85;--teal-light:#5BA8B5;
+    --hair:rgba(200,169,110,0.18);--hair-soft:rgba(200,169,110,0.10);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:var(--ink);color:var(--ivory);font-family:'Noto Serif SC',serif;font-weight:300;min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:
+    radial-gradient(ellipse at 18% 15%,rgba(60,40,100,.32) 0%,transparent 58%),
+    radial-gradient(ellipse at 82% 85%,rgba(40,20,60,.42) 0%,transparent 58%),
+    radial-gradient(ellipse at 50% -5%,rgba(155,35,53,.12) 0%,transparent 48%);
+    pointer-events:none;z-index:0}
+  .starfield{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .starfield span{position:absolute;inset:0;display:block}
+  .s1{background-image:radial-gradient(1px 1px at 12% 22%,rgba(242,235,217,.9),transparent),radial-gradient(1px 1px at 67% 14%,rgba(242,235,217,.7),transparent),radial-gradient(1px 1px at 34% 71%,rgba(200,169,110,.8),transparent),radial-gradient(1px 1px at 88% 64%,rgba(242,235,217,.7),transparent);animation:tw 6s ease-in-out infinite}
+  .s2{background-image:radial-gradient(1.4px 1.4px at 23% 56%,rgba(232,201,126,.9),transparent),radial-gradient(1.4px 1.4px at 78% 33%,rgba(242,235,217,.85),transparent),radial-gradient(1.4px 1.4px at 44% 88%,rgba(242,235,217,.7),transparent);animation:tw 9s ease-in-out 1.5s infinite}
+  @keyframes tw{0%,100%{opacity:.35}50%{opacity:.95}}
+  @media (prefers-reduced-motion:reduce){.s1,.s2{animation:none}}
+  .container{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:40px 24px 80px}
+  .header{text-align:center;padding:48px 0 28px}
+  .header-eyebrow{font-size:11px;letter-spacing:7px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:18px}
+  .header-title{font-family:'Ma Shan Zheng',serif;font-size:clamp(36px,6vw,56px);color:var(--gold);line-height:1.18;text-shadow:0 0 44px rgba(200,169,110,.35)}
+  .header-sub{font-size:13px;color:var(--ivory-dim);letter-spacing:3px;margin-top:12px}
+
+  /* 表单 */
+  .form-card{background:var(--ink-mid);border:1px solid var(--hair);border-radius:4px;padding:30px;margin-bottom:32px;box-shadow:0 8px 40px rgba(0,0,0,.45)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .field{display:flex;flex-direction:column;gap:7px}
+  .field.full{grid-column:1/-1}
+  label{font-size:11px;letter-spacing:2px;color:var(--gold-dim)}
+  input,select,textarea{background:var(--ink);border:1px solid var(--hair);border-radius:3px;color:var(--ivory);font-family:inherit;font-size:14px;padding:10px 12px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  .row-inline{display:flex;gap:10px;align-items:center}
+  .row-inline label.chk{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ivory-dim);cursor:pointer}
+  .hint{font-size:11px;color:var(--ivory-dim);opacity:.7;line-height:1.6}
+  .btn{background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:#1a1408;border:none;border-radius:3px;font-family:'Noto Serif SC',serif;font-weight:600;font-size:15px;letter-spacing:2px;padding:13px 28px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(200,169,110,.35)}
+  .btn-ghost{background:transparent;border:1px solid var(--hair);color:var(--gold);font-weight:400}
+  .btn-ghost:hover{box-shadow:none;border-color:var(--gold)}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;align-items:center}
+
+  /* 加载动画 */
+  .loading{display:none;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:24px}
+  .loading.on{display:flex}
+  .orbit{position:relative;width:120px;height:120px}
+  .orbit::before{content:'☯';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:46px;color:var(--gold);opacity:.85;animation:spin 4s linear infinite}
+  .orbit i{position:absolute;inset:0;border:1px solid var(--hair);border-top-color:var(--gold);border-radius:50%;animation:spin 1.6s linear infinite}
+  .orbit i:nth-child(2){inset:16px;border-top-color:var(--crimson-bright);animation-duration:2.4s;animation-direction:reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-family:'Ma Shan Zheng',serif;font-size:20px;color:var(--gold);letter-spacing:3px}
+  .loading-sub{font-size:12px;color:var(--ivory-dim);letter-spacing:2px}
+
+  .err{display:none;background:rgba(155,35,53,.12);border:1px solid rgba(196,43,63,.4);border-radius:3px;padding:16px 18px;margin-bottom:24px;color:#FF9090;font-size:13px;line-height:1.8;white-space:pre-wrap}
+  .err.on{display:block}
+
+  /* 报告区（复用精致主题） */
+  #report{display:none}
+  #report.on{display:block;animation:fadeUp .8s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  .correction-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;font-size:11px;color:var(--ivory-dim)}
+  .correction-bar .chip{background:var(--ink-mid);border:1px solid var(--hair-soft);border-radius:20px;padding:5px 12px}
+  .correction-bar .chip b{color:var(--gold);font-weight:600}
+  .warn-chip{background:rgba(200,100,50,.15)!important;border-color:rgba(200,100,50,.4)!important;color:#FF9060!important}
+
+  .info-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:3px;overflow:hidden;margin-bottom:40px;box-shadow:0 8px 40px rgba(0,0,0,.45)}
+  .info-cell{background:var(--ink-mid);padding:20px 12px;text-align:center}
+  .info-cell-label{font-size:10px;letter-spacing:3px;color:var(--gold-dim);margin-bottom:9px}
+  .info-cell-value{font-size:16px;color:var(--gold);font-weight:600}
+  .section-title{font-size:11px;letter-spacing:6px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+  .section-title::before{content:'✦';font-size:10px;color:var(--gold);opacity:.7}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--hair)}
+
+  .palace-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,auto);gap:1px;background:var(--hair-soft);border:1px solid var(--hair);border-radius:3px;overflow:hidden;margin-bottom:40px;box-shadow:0 8px 40px rgba(0,0,0,.45)}
+  .palace{background:var(--ink-mid);padding:13px 11px;min-height:112px;position:relative}
+  .palace.active{background:rgba(155,35,53,.16);box-shadow:inset 0 0 0 1px rgba(196,43,63,.55),0 0 24px rgba(155,35,53,.25);z-index:2}
+  .palace.limit{background:rgba(59,122,133,.13);box-shadow:inset 0 0 0 1px rgba(91,168,181,.45);z-index:2}
+  .palace-name{font-size:9px;letter-spacing:2px;color:var(--ivory-dim);margin-bottom:7px;opacity:.6}
+  .palace-dizhi{position:absolute;top:10px;right:10px;font-size:11px;color:var(--gold-dim);opacity:.55}
+  .palace-stars{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+  .star{font-size:13px;color:var(--ivory);font-weight:500}
+  .star.main{color:var(--gold-light);font-size:14px;font-weight:600}
+  .star.hua{color:var(--crimson-bright);font-size:11px}
+  .star.empty{color:var(--ivory-dim);opacity:.3;font-size:11px;font-style:italic}
+  .pbadge{display:inline-block;font-size:9px;padding:2px 7px;border-radius:2px;margin-top:6px;letter-spacing:1px}
+  .b-ming{background:rgba(155,35,53,.3);color:#FF6B6B;border:1px solid rgba(155,35,53,.5)}
+  .b-body{background:rgba(100,120,200,.3);color:#7BA8F0;border:1px solid rgba(100,120,200,.5)}
+  .b-limit{background:rgba(59,122,133,.3);color:var(--teal-light);border:1px solid rgba(59,122,133,.5)}
+  .palace-center{grid-column:2/4;grid-row:2/4;background:radial-gradient(ellipse at center,rgba(20,18,30,.9),rgba(7,7,12,.92));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;position:relative;box-shadow:inset 0 0 0 1px var(--hair-soft)}
+  .center-bagua{font-size:54px;opacity:.14;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:spin 60s linear infinite}
+  .center-title{font-family:'Ma Shan Zheng',serif;font-size:22px;color:var(--gold);margin-bottom:10px;position:relative;z-index:1}
+  .center-info{font-size:11px;color:var(--ivory-dim);text-align:center;line-height:2;position:relative;z-index:1}
+  .four-hua-bar{display:flex;gap:4px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+  .hua-tag{font-size:10px;padding:3px 9px;border-radius:2px;letter-spacing:1px}
+  .hua-lu{background:rgba(100,180,80,.15);color:#7CCC60;border:1px solid rgba(100,180,80,.3)}
+  .hua-quan{background:rgba(200,169,110,.15);color:var(--gold);border:1px solid rgba(200,169,110,.3)}
+  .hua-ke{background:rgba(80,120,200,.15);color:#7BA8F0;border:1px solid rgba(80,120,200,.3)}
+  .hua-ji{background:rgba(155,35,53,.2);color:#FF6B6B;border:1px solid rgba(155,35,53,.4)}
+
+  /* 解读卡片 */
+  .reading-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px}
+  .rcard{background:var(--ink-mid);border:1px solid var(--hair-soft);border-radius:3px;padding:24px;position:relative;overflow:hidden}
+  .rcard::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--gold),transparent 70%);opacity:.5}
+  .rcard.full{grid-column:1/-1}
+  .rcard.hl{border-color:rgba(155,35,53,.3);background:rgba(155,35,53,.05)}
+  .rcard.teal{border-color:rgba(59,122,133,.3);background:rgba(59,122,133,.05)}
+  .rcard-title{font-size:11px;letter-spacing:4px;color:var(--gold-dim);margin-bottom:14px;text-transform:uppercase}
+  .rcard-badge{font-size:18px;color:var(--gold);font-weight:600;margin-bottom:12px}
+  .rcard-body{font-size:13.5px;line-height:2.05;color:var(--ivory-dim)}
+  .rcard-body strong{color:var(--ivory);font-weight:600}.rcard-body em{color:var(--gold);font-style:normal}
+  .rcard-body .warn{color:#FF8C60}.rcard-body .good{color:#7CCC60}
+
+  /* 解读输入区 */
+  .reading-input{background:var(--ink-mid);border:1px dashed var(--hair);border-radius:4px;padding:24px;margin-bottom:40px}
+  .reading-input h3{font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:6px}
+  .reading-input p{font-size:12px;color:var(--ivory-dim);line-height:1.8;margin-bottom:14px}
+  .reading-input textarea{width:100%;min-height:120px;resize:vertical;font-family:ui-monospace,monospace;font-size:12px}
+  .copybox{background:var(--ink);border:1px solid var(--hair-soft);border-radius:3px;padding:12px;font-family:ui-monospace,monospace;font-size:11px;color:var(--ivory-dim);max-height:120px;overflow:auto;white-space:pre-wrap;margin-bottom:12px}
+
+  /* 反馈 */
+  .feedback{border:1px solid rgba(200,169,110,.25);border-radius:4px;padding:30px;background:linear-gradient(135deg,rgba(200,169,110,.04),rgba(59,122,133,.06));margin-bottom:40px}
+  .feedback h3{font-family:'Ma Shan Zheng',serif;font-size:22px;color:var(--gold);margin-bottom:6px}
+  .feedback .desc{font-size:12px;color:var(--ivory-dim);margin-bottom:20px}
+  .fb-row{display:grid;grid-template-columns:90px 1fr 1.4fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--hair-soft)}
+  .fb-dim{font-size:13px;color:var(--gold)}
+  .fb-verdicts{display:flex;gap:6px}
+  .vbtn{font-size:11px;padding:5px 10px;border-radius:3px;border:1px solid var(--hair-soft);background:var(--ink);color:var(--ivory-dim);cursor:pointer}
+  .vbtn.sel-hit{background:rgba(80,180,80,.2);color:#7CCC60;border-color:rgba(80,180,80,.5)}
+  .vbtn.sel-partial{background:rgba(200,169,110,.2);color:var(--gold);border-color:rgba(200,169,110,.5)}
+  .vbtn.sel-miss{background:rgba(155,35,53,.2);color:#FF6B6B;border-color:rgba(155,35,53,.5)}
+  .fb-note{font-size:12px;padding:7px 10px}
+  .footer{text-align:center;padding:40px 0 8px}
+  .footer-quote{font-family:'Ma Shan Zheng',serif;font-size:18px;color:rgba(200,169,110,.45);letter-spacing:4px;line-height:2}
+  .footer-note{font-size:11px;color:rgba(200,169,110,.25);margin-top:12px;letter-spacing:2px}
+  @media (max-width:640px){.form-grid,.reading-grid{grid-template-columns:1fr}.info-bar{grid-template-columns:1fr 1fr}.palace-grid{grid-template-columns:repeat(3,1fr);font-size:12px}.palace-center{display:none}.fb-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="starfield" aria-hidden="true"><span class="s1"></span><span class="s2"></span></div>
+<div class="container">
+
+  <div class="header">
+    <div class="header-eyebrow">紫微三合 × 中州派 × 真太阳时校正</div>
+    <div class="header-title">命理解读师</div>
+    <div class="header-sub">在线排盘 · 浏览器本地计算 · 数据不上传</div>
+  </div>
+
+  <!-- 表单 -->
+  <div class="form-card" id="formCard">
+    <div class="form-grid">
+      <div class="field"><label>姓名 / 代号</label><input id="f-code" placeholder="如 A001（用于反馈记录，可填化名）"></div>
+      <div class="field"><label>性别</label><select id="f-gender"><option value="male">男</option><option value="female">女</option></select></div>
+      <div class="field"><label>历法</label>
+        <div class="row-inline"><select id="f-cal" style="flex:1"><option value="solar">公历</option><option value="lunar">农历</option></select>
+        <label class="chk"><input type="checkbox" id="f-leap">闰月</label></div></div>
+      <div class="field"><label>出生日期</label><input id="f-date" type="text" placeholder="YYYY-M-D 如 1991-8-15"></div>
+      <div class="field"><label>出生时间（钟表/北京时间）</label><input id="f-time" type="text" placeholder="HH:MM 如 23:30"></div>
+      <div class="field"><label>出生城市（真太阳时校正）</label><select id="f-city"></select></div>
+      <div class="field full"><label class="chk"><input type="checkbox" id="f-manualhour">时辰不确定 / 手动指定时辰（跳过真太阳时换算）</label></div>
+      <div class="field full" id="manualHourWrap" style="display:none"><label>手动时辰</label><select id="f-hour"></select></div>
+    </div>
+    <div class="hint" style="margin-top:14px">真太阳时校正：经度时差 + 均时差 + 夏令时（1986–1991 夏季自动识别）。1986–1991 夏季出生请确认报的是夏令时钟表。</div>
+    <div class="actions">
+      <button class="btn" id="goBtn">排盘 →</button>
+      <span class="hint" id="iztroStatus">正在加载排盘引擎…</span>
+    </div>
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <!-- 加载 -->
+  <div class="loading" id="loading">
+    <div class="orbit"><i></i><i></i></div>
+    <div class="loading-text" id="loadText">观星定盘…</div>
+    <div class="loading-sub">校正真太阳时 · 安十二宫 · 飞四化</div>
+  </div>
+
+  <!-- 报告 -->
+  <div id="report">
+    <div class="correction-bar" id="corrBar"></div>
+    <div class="info-bar" id="infoBar"></div>
+    <div class="section-title">十二宫位分布</div>
+    <div class="palace-grid" id="palaceGrid"></div>
+
+    <!-- 解读输入 -->
+    <div class="reading-input" id="readingInput">
+      <h3>解读（Claude 在环）</h3>
+      <p>1) 点「复制排盘给 Claude」，把排盘数据发给 Claude 出解读 → 2) 把返回的 reading.json 粘贴到下面 → 3) 点「渲染解读」。</p>
+      <div class="copybox" id="chartJsonBox"></div>
+      <div class="actions" style="margin:0 0 14px">
+        <button class="btn-ghost btn" id="copyChartBtn">复制排盘给 Claude</button>
+      </div>
+      <textarea id="readingJson" placeholder='粘贴 reading.json，如 {"cards":[...],"calibration_questions":[...]}'></textarea>
+      <div class="actions" style="margin-top:12px"><button class="btn" id="renderReadingBtn">渲染解读</button></div>
+    </div>
+
+    <div id="readingArea"></div>
+
+    <!-- 反馈 -->
+    <div class="feedback" id="feedbackBox" style="display:none">
+      <h3>反馈校准</h3>
+      <div class="desc">逐维度打分 → 导出 records JSON → 喂给 feedback.py 算胜率。hit=准 / partial=部分 / miss=不准。</div>
+      <div id="fbRows"></div>
+      <div class="actions"><button class="btn" id="exportFbBtn">导出反馈 JSON</button></div>
+    </div>
+
+    <div class="actions" style="justify-content:center;margin-bottom:24px">
+      <button class="btn" id="downloadBtn">⤓ 下载报告 HTML</button>
+      <button class="btn-ghost btn" id="resetBtn">重新排盘</button>
+    </div>
+
+    <div class="footer">
+      <div class="footer-quote">命盘显示可能性<br>行动决定现实</div>
+      <div class="footer-note">象由心生 · 算命是对话，不是表演 · 准确度随沟通趋近</div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { astro } from 'https://cdn.jsdelivr.net/npm/iztro@2/+esm';
+
+// ---------- 真太阳时校正（移植自 true_solar_time.py） ----------
+const CITY_LON = {'北京':116.41,'上海':121.47,'天津':117.20,'重庆':106.55,'广州':113.27,'深圳':114.06,'香港':114.17,'澳门':113.55,'杭州':120.16,'南京':118.80,'苏州':120.62,'宁波':121.55,'成都':104.07,'武汉':114.31,'西安':108.95,'郑州':113.62,'长沙':112.94,'南昌':115.86,'合肥':117.23,'济南':117.00,'青岛':120.38,'沈阳':123.43,'大连':121.62,'哈尔滨':126.53,'长春':125.32,'石家庄':114.51,'太原':112.55,'呼和浩特':111.75,'福州':119.30,'厦门':118.10,'南宁':108.37,'昆明':102.71,'贵阳':106.71,'兰州':103.83,'西宁':101.78,'银川':106.23,'乌鲁木齐':87.62,'拉萨':91.13,'海口':110.35,'台北':121.56};
+const DST=[['1986-05-04','1986-09-14'],['1987-04-12','1987-09-13'],['1988-04-17','1988-09-11'],['1989-04-16','1989-09-17'],['1990-04-15','1990-09-16'],['1991-04-14','1991-09-15']];
+const STD_MERIDIAN=120.0;
+const HOUR_NAMES={0:'早子时 (00-01)',1:'丑时 (01-03)',2:'寅时 (03-05)',3:'卯时 (05-07)',4:'辰时 (07-09)',5:'巳时 (09-11)',6:'午时 (11-13)',7:'未时 (13-15)',8:'申时 (15-17)',9:'酉时 (17-19)',10:'戌时 (19-21)',11:'亥时 (21-23)',12:'晚子时 (23-00)'};
+
+function dayOfYear(d){const s=new Date(d.getFullYear(),0,0);return Math.floor((d-s)/86400000);}
+function eot(d){const n=dayOfYear(d);const b=2*Math.PI/365*(n-81);return 9.87*Math.sin(2*b)-7.53*Math.cos(b)-1.5*Math.sin(b);}
+function inDst(d){const t=d.getTime();return DST.some(([s,e])=>{const sd=new Date(s+'T00:00:00'),ed=new Date(e+'T00:00:00');ed.setDate(ed.getDate()+1);return t>=sd.getTime()&&t<ed.getTime();});}
+function hourToIndex(d){const t=d.getHours()+d.getMinutes()/60;if(t>=23)return 12;if(t<1)return 0;return Math.floor((t+1)/2);}
+function boundaryDist(d){const m=d.getHours()*60+d.getMinutes();const bs=[];for(let h=1;h<24;h+=2)bs.push(h*60);bs.push(0,1440);return Math.min(...bs.map(b=>Math.abs(m-b)));}
+
+function correctSolar(dateStr,timeStr,lon){
+  const [y,mo,da]=dateStr.split('-').map(Number);
+  const [hh,mm]=timeStr.split(':').map(Number);
+  const dt=new Date(y,mo-1,da,hh,mm);
+  const dst=inDst(dt);const dstMin=dst?-60:0;
+  const lonMin=(lon-STD_MERIDIAN)*4;
+  const eotMin=eot(dt);
+  const total=dstMin+lonMin+eotMin;
+  const trueDt=new Date(dt.getTime()+total*60000);
+  return {dst,dstMin,lonMin,eotMin,total,trueDt,idx:hourToIndex(trueDt),dist:boundaryDist(trueDt)};
+}
+const fmt=d=>`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+
+// ---------- 宫位网格映射（同 generate_html.py） ----------
+const GRID={'巳':[1,1],'午':[1,2],'未':[1,3],'申':[1,4],'辰':[2,1],'酉':[2,4],'卯':[3,1],'戌':[3,4],'寅':[4,1],'丑':[4,2],'子':[4,3],'亥':[4,4]};
+const HUA_CLASS={'禄':'hua-lu','权':'hua-quan','科':'hua-ke','忌':'hua-ji'};
+
+let CURRENT=null; // {chart_input, predictions, astrolabe-derived}
+
+// ---------- 初始化 UI ----------
+const $=id=>document.getElementById(id);
+function initSelects(){
+  const city=$('f-city');
+  Object.keys(CITY_LON).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=`${c} (${CITY_LON[c]}°E)`;city.appendChild(o);});
+  const ho=$('f-hour');
+  for(let i=0;i<=12;i++){const o=document.createElement('option');o.value=i;o.textContent=HOUR_NAMES[i];ho.appendChild(o);}
+}
+initSelects();
+$('f-manualhour').addEventListener('change',e=>{$('manualHourWrap').style.display=e.target.checked?'flex':'none';});
+$('iztroStatus').textContent = astro ? '排盘引擎就绪 ✓' : '引擎加载失败';
+$('iztroStatus').style.color = 'var(--teal-light)';
+
+function showErr(msg){const e=$('errBox');e.textContent='⚠ '+msg;e.classList.add('on');$('loading').classList.remove('on');}
+function clearErr(){$('errBox').classList.remove('on');}
+
+// ---------- 排盘主流程 ----------
+$('goBtn').addEventListener('click',async()=>{
+  clearErr();
+  const code=$('f-code').value.trim()||'未命名';
+  const gender=$('f-gender').value;
+  const cal=$('f-cal').value;
+  const leap=$('f-leap').checked;
+  const dateStr=$('f-date').value.trim();
+  const timeStr=$('f-time').value.trim();
+  const manual=$('f-manualhour').checked;
+  if(!dateStr){showErr('请填写出生日期');return;}
+  if(!manual&&!/^\d{1,2}:\d{2}$/.test(timeStr)){showErr('请填写出生时间 HH:MM，或勾选手动指定时辰');return;}
+
+  let hourIdx, solarForChart=dateStr, corr=null, lon=CITY_LON[$('f-city').value];
+  if(manual){hourIdx=parseInt($('f-hour').value,10);}
+  else{
+    if(cal==='lunar'){ // 农历：仅按时间取时辰，日期不做跨日（近午夜需手动）
+      const [hh,mm]=timeStr.split(':').map(Number);
+      const tmp=new Date(2000,0,1,hh,mm);hourIdx=hourToIndex(tmp);
+      corr={note:'农历输入仅按钟表取时辰，未做真太阳时跨日校正'};
+    }else{
+      corr=correctSolar(dateStr,timeStr,lon);
+      hourIdx=corr.idx;solarForChart=fmt(corr.trueDt);
+    }
+  }
+
+  $('formCard').style.display='none';
+  $('loading').classList.add('on');
+  await new Promise(r=>setTimeout(r,900)); // 让动画喘口气
+
+  let chart;
+  try{
+    if(cal==='lunar') chart=astro.byLunar(dateStr,hourIdx,gender,leap,true,'zh-CN');
+    else chart=astro.bySolar(solarForChart,hourIdx,gender,'zh-CN');
+  }catch(err){
+    $('formCard').style.display='block';
+    showErr('排盘失败：'+(err&&err.message?err.message:err)+'\n请检查日期格式（YYYY-M-D）。');
+    return;
+  }
+
+  CURRENT={code,gender,cal,leap,dateStr,timeStr,lon,manual,hourIdx,solarForChart,corr,chart};
+  renderReport(chart,corr,{code,solarForChart,hourIdx,gender,lon,trueSolar:corr&&corr.trueDt?`${fmt(corr.trueDt)} ${String(corr.trueDt.getHours()).padStart(2,'0')}:${String(corr.trueDt.getMinutes()).padStart(2,'0')}`:null});
+  $('loading').classList.remove('on');
+  $('report').classList.add('on');
+  $('report').scrollIntoView({behavior:'smooth'});
+});
+
+function renderReport(chart,corr,meta){
+  // 校正条
+  const cb=$('corrBar');cb.innerHTML='';
+  const chip=(h)=>{const s=document.createElement('span');s.className='chip';s.innerHTML=h;return s;};
+  if(corr&&corr.trueDt){
+    cb.appendChild(chip(`真太阳时 <b>${meta.trueSolar}</b>`));
+    cb.appendChild(chip(`经度时差 <b>${corr.lonMin.toFixed(0)}min</b>`));
+    cb.appendChild(chip(`均时差 <b>${corr.eotMin.toFixed(0)}min</b>`));
+    cb.appendChild(chip(`夏令时 <b>${corr.dst?'是 -60min':'否'}</b>`));
+    if(corr.dist<=15){const w=chip(`⚠ 距时辰边界仅 ${corr.dist}min，建议相邻时辰各排一盘`);w.className='chip warn-chip';cb.appendChild(w);}
+  }else if(corr&&corr.note){cb.appendChild(chip(corr.note));}
+
+  // 命宫/身宫/五行局
+  const palaces=chart.palaces;
+  const soulBranch=chart.earthlyBranchOfSoulPalace;
+  const five=chart.fiveElementsClass;
+  // 当前大限
+  let limitBranch='';
+  let limitDisplay='';
+  try{
+    const today=new Date();
+    const hs=chart.horoscope(`${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`);
+    const di=hs.decadal.index;
+    const lp=palaces[di];
+    limitBranch=lp.earthlyBranch;
+    const lstars=(lp.majorStars||[]).map(s=>s.name).join('·')||'借对宫';
+    limitDisplay=`${lp.earthlyBranch}宫·${lstars}`;
+  }catch(e){limitDisplay='—';}
+
+  const soulPalace=palaces.find(p=>p.name==='命宫');
+  const soulStars=soulPalace&&soulPalace.majorStars.length?soulPalace.majorStars.map(s=>s.name).join('·'):'空宫（借对宫）';
+
+  // info bar
+  $('infoBar').innerHTML=[
+    ['五 行 局',five],['命 宫',soulBranch+'宫'],['命 主 星',soulStars],['当 前 大 限',limitDisplay]
+  ].map(([l,v])=>`<div class="info-cell"><div class="info-cell-label">${l}</div><div class="info-cell-value">${v}</div></div>`).join('');
+
+  // 宫位网格
+  const cellByPos={};
+  const yearHua=[];
+  palaces.forEach(p=>{
+    const br=p.earthlyBranch;
+    let stars='';
+    const allStars=[...(p.majorStars||[]),...(p.minorStars||[])];
+    allStars.forEach(s=>{if(s.mutagen)yearHua.push({name:s.name,mutagen:s.mutagen,branch:br});});
+    if(p.majorStars&&p.majorStars.length){
+      p.majorStars.forEach(s=>{stars+=`<span class="star main">${s.name}</span>`;if(s.mutagen)stars+=`<span class="star hua">${s.name}化${s.mutagen}</span>`;});
+      (p.minorStars||[]).forEach(s=>{stars+=`<span class="star">${s.name}</span>`;if(s.mutagen)stars+=`<span class="star hua">${s.name}化${s.mutagen}</span>`;});
+    }else{stars=`<span class="star empty">空宫</span>`;}
+    let cls='palace';if(br===soulBranch)cls+=' active';if(br===limitBranch)cls+=' limit';
+    let badges='';if(p.name==='命宫')badges+='<div class="pbadge b-ming">命宫</div>';if(p.isBodyPalace)badges+='<div class="pbadge b-body">身宫</div>';
+    if(br===limitBranch&&p.name!=='命宫')badges+='<div class="pbadge b-limit">当前大限</div>';
+    cellByPos[GRID[br].join(',')]=`<div class="${cls}"><div class="palace-name">${p.name}</div><div class="palace-dizhi">${br}</div><div class="palace-stars">${stars}</div>${badges}</div>`;
+  });
+  let grid='';
+  for(let r=1;r<=4;r++)for(let c=1;c<=4;c++){
+    if((r===2||r===3)&&(c===2||c===3)){if(r===2&&c===2)grid+=buildCenter(chart,yearHua,five);continue;}
+    grid+=cellByPos[`${r},${c}`]||'<div class="palace"></div>';
+  }
+  $('palaceGrid').innerHTML=grid;
+
+  // 排盘 JSON（给 Claude）
+  const chartExport={
+    solar_date:meta.solarForChart,lunar_date:chart.lunarDate,chinese_date:chart.chineseDate,
+    gender:CURRENT.gender==='male'?'男':'女',hour_index:meta.hourIdx,hour_name:HOUR_NAMES[meta.hourIdx],
+    five_elements:five,soul_palace_branch:soulBranch,body_palace_branch:chart.earthlyBranchOfBodyPalace,
+    true_solar_time:meta.trueSolar,longitude:meta.lon,
+    year_mutagens:yearHua.map(h=>({star:h.name,mutagen:'化'+h.mutagen,branch:h.branch})),
+    palaces:palaces.map(p=>({name:p.name,branch:p.earthlyBranch,major:(p.majorStars||[]).map(s=>s.name+(s.mutagen?'化'+s.mutagen:'')),minor:(p.minorStars||[]).map(s=>s.name+(s.mutagen?'化'+s.mutagen:''))}))
+  };
+  CURRENT.chartExport=chartExport;
+  $('chartJsonBox').textContent=JSON.stringify(chartExport,null,2);
+}
+
+function buildCenter(chart,yearHua,five){
+  const cd=(chart.chineseDate||'').split(' ')[0]||'';
+  const huaTags=yearHua.map(h=>`<span class="hua-tag ${HUA_CLASS[h.mutagen]||''}">${h.name}化${h.mutagen}</span>`).join('');
+  return `<div class="palace-center"><div class="center-bagua">☯</div><div class="center-title">${cd}生人</div><div class="center-info">${chart.solarDate||''}<br>${chart.lunarDate||''}<br>${five}</div><div class="four-hua-bar">${huaTags}</div></div>`;
+}
+
+// ---------- 解读渲染 ----------
+$('copyChartBtn').addEventListener('click',()=>{
+  const prompt='请按 mingli-master 的 reading.json 格式，为以下排盘生成有温度的解读（cards + calibration_questions），直接返回 JSON：\n\n'+JSON.stringify(CURRENT.chartExport,null,2);
+  navigator.clipboard.writeText(prompt).then(()=>{$('copyChartBtn').textContent='已复制 ✓';setTimeout(()=>$('copyChartBtn').textContent='复制排盘给 Claude',1800);});
+});
+
+$('renderReadingBtn').addEventListener('click',()=>{
+  clearErr();
+  let data;
+  try{data=JSON.parse($('readingJson').value);}catch(e){showErr('reading.json 解析失败：'+e.message);return;}
+  const cards=data.cards||[];
+  let html='<div class="section-title">命盘解读</div><div class="reading-grid">';
+  cards.forEach((c,i)=>{
+    let cls='rcard';if(c.full)cls+=' full';if(c.highlight)cls+=' hl';if(c.teal)cls+=' teal';
+    html+=`<div class="${cls}"><div class="rcard-title">${c.title||''}</div><div class="rcard-badge">${c.badge||''}</div><div class="rcard-body">${c.body||''}</div></div>`;
+  });
+  html+='</div>';
+  $('readingArea').innerHTML=html;
+  buildFeedback(cards);
+  $('feedbackBox').style.display='block';
+  $('readingArea').scrollIntoView({behavior:'smooth'});
+});
+
+// ---------- 反馈 ----------
+const DIMS=['命盘底色','事业','财运','感情','当前大限','健康','六亲','流年'];
+let fbState={};
+function buildFeedback(cards){
+  // 维度优先取卡片标题里的关键词，否则用默认维度
+  const dims=cards.length?cards.map(c=>(c.title||'').split('·')[0].trim()||'维度'):DIMS.slice(0,5);
+  fbState={};
+  const wrap=$('fbRows');wrap.innerHTML='';
+  dims.forEach((d,i)=>{
+    fbState[d]={verdict:null,note:'',confidence:(cards[i]&&cards[i].probabilities&&cards[i].probabilities[0]&&cards[i].probabilities[0].pct)||70};
+    const row=document.createElement('div');row.className='fb-row';
+    row.innerHTML=`<div class="fb-dim">${d}</div>
+      <div class="fb-verdicts">
+        <button class="vbtn" data-d="${d}" data-v="hit">准</button>
+        <button class="vbtn" data-d="${d}" data-v="partial">部分</button>
+        <button class="vbtn" data-d="${d}" data-v="miss">不准</button>
+      </div>
+      <input class="fb-note" data-d="${d}" placeholder="备注（可空）">`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.vbtn').forEach(b=>b.addEventListener('click',()=>{
+    const d=b.dataset.d,v=b.dataset.v;fbState[d].verdict=v;
+    wrap.querySelectorAll(`.vbtn[data-d="${CSS.escape(d)}"]`).forEach(x=>x.className='vbtn');
+    b.className='vbtn sel-'+v;
+  }));
+  wrap.querySelectorAll('.fb-note').forEach(inp=>inp.addEventListener('input',()=>{fbState[inp.dataset.d].note=inp.value;}));
+}
+
+$('exportFbBtn').addEventListener('click',()=>{
+  const ce=CURRENT.chartExport;
+  const today=new Date();const ds=`${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+  const rec={
+    code:CURRENT.code,
+    chart_input:{solar_date:ce.solar_date,hour_index:ce.hour_index,gender:ce.gender,longitude:ce.longitude,true_solar_applied:!!(CURRENT.corr&&CURRENT.corr.trueDt),dst_applied:!!(CURRENT.corr&&CURRENT.corr.dst)},
+    predictions:Object.keys(fbState).map(d=>({dimension:d,claim:'',confidence:fbState[d].confidence})),
+    feedback:[{date:`${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`,by:'客户自评',
+      results:Object.keys(fbState).filter(d=>fbState[d].verdict).map(d=>({dimension:d,verdict:fbState[d].verdict,note:fbState[d].note})),
+      calibration_note:''}]
+  };
+  download(`${ds}_${CURRENT.code}.json`,JSON.stringify(rec,null,2),'application/json');
+});
+
+// ---------- 下载报告 ----------
+$('downloadBtn').addEventListener('click',()=>{
+  const css=document.querySelector('style').outerHTML;
+  const rep=$('report').cloneNode(true);
+  // 移除交互区
+  rep.querySelector('#readingInput')?.remove();
+  rep.querySelector('#feedbackBox')?.remove();
+  rep.querySelectorAll('.actions').forEach(a=>a.remove());
+  const html=`<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>命盘解读 · ${CURRENT.code}</title><link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">${css}</head><body><div class="starfield"><span class="s1"></span><span class="s2"></span></div><div class="container">${rep.innerHTML}</div></body></html>`;
+  download(`命盘_${CURRENT.code}.html`,html,'text/html');
+});
+
+$('resetBtn').addEventListener('click',()=>{$('report').classList.remove('on');$('formCard').style.display='block';$('readingArea').innerHTML='';$('readingJson').value='';$('feedbackBox').style.display='none';window.scrollTo({top:0,behavior:'smooth'});});
+
+function download(name,content,type){
+  const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
