@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import date
 
 RECORDS_DIR = os.path.join(os.path.dirname(__file__), '..', 'records')
-VERDICT_SCORE = {'hit': 1.0, 'partial': 0.5, 'miss': 0.0}
+VERDICT_SCORE = {'hit': 1.0, 'lean': 0.75, 'mid': 0.5, 'weak': 0.25, 'miss': 0.0, 'partial': 0.5}
 DIMENSIONS = ['命盘底色', '事业', '财运', '感情', '当前大限', '健康', '六亲', '流年']
 
 
