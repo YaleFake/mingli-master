@@ -478,6 +478,38 @@ const COMBO={
  '廉贞+破军':{core:'囚星配先锋，叛逆敢破、不走寻常路，冲劲足但易冲动',career:'适合变革、创新、非主流领域',wealth:'<span class="warn">起伏大，先破后立</span>',love:'浓烈多变，需要稳住'}
 };
 function comboGet(names,dim){if(names.length<2)return null;const a=names[0],b=names[1];const c=COMBO[a+'+'+b]||COMBO[b+'+'+a];return c?(c[dim]||c.core):null;}
+// 生年四化入十二宫断语
+const HUA_PALACE={
+ '禄':{'命宫':'本命带福，机会与人缘旺，做事顺','兄弟':'手足同辈得力，合作有助','夫妻':'感情有缘、伴侣带来助力','子女':'子女缘佳，合伙与桃花顺','财帛':'财源活、进财顺，善生财','疾厄':'体质尚可，情绪能自我调节','迁移':'在外吃得开、贵人多，宜外出发展','仆役':'朋友部属得力，人脉即资源','官禄':'事业顺、机会多，易名利双收','田宅':'家境/不动产有进益，置产顺','福德':'享受得来、心宽福厚，兴趣广','父母':'与长辈缘佳、得庇荫，学业顺'},
+ '权':{'命宫':'有主见、能掌局，气场强','兄弟':'同辈中你说了算，主导力强','夫妻':'感情偏主导，伴侣有能力','子女':'重视教育、对子女管得严','财帛':'理财有手腕、能掌控金钱','疾厄':'精力旺但易过劳','迁移':'在外有威望、能掌主动','仆役':'部属服你、能带团队','官禄':'事业有权位、能扛事、易升迁','田宅':'掌家业、置产有魄力','福德':'对生活要求高、主观强','父母':'长辈强势，或你影响长辈'},
+ '科':{'命宫':'有声誉、气质佳，逢难有贵人','兄弟':'手足有成、彼此添光','夫妻':'伴侣有才名、感情斯文','子女':'子女聪慧有才','财帛':'财来得体面、理财有方','疾厄':'病也轻、逢医得救','迁移':'在外有名声、得贵人提携','仆役':'结交益友、朋友有水准','官禄':'事业有名望、利考试升迁','田宅':'家世清贵、居所讲究','福德':'品味高、精神世界丰富','父母':'长辈有文化、家教好'},
+ '忌':{'命宫':'易钻牛角尖、自我消耗，需放宽','兄弟':'手足缘薄或合作生隙','夫妻':'感情多纠葛、易计较，需经营','子女':'为子女操心、桃花生扰','财帛':'财上易耗、卡现金流，忌冲动投资','疾厄':'有需留意的健康弱点，别硬扛','迁移':'在外易碰壁、奔波是非，慎远行决策','仆役':'朋友部属易拖累、防小人','官禄':'事业起伏、压力大、易卡瓶颈','田宅':'家宅不宁，或不动产生扰','福德':'想太多、易焦虑，精神需安顿','父母':'与长辈需磨合、防文书疏漏'}
+};
+function huaPalaceCard(ps){
+  const ym=(CURRENT.chartExport&&CURRENT.chartExport.year_mutagens)||[];
+  if(!ym.length)return null;
+  const lines=ym.map(m=>{const k=(m.mutagen||'').replace('化','');const pal=ps.find(p=>p.earthlyBranch===m.branch);const nm=pal?pal.name:'';const txt=(HUA_PALACE[k]&&HUA_PALACE[k][nm])||'综合判断';const cls=k==='忌'?'warn':'good';return `<em>${m.star}化${k}</em> 入【${nm}】：<span class="${cls}">${txt}</span>`;});
+  return {title:'生年四化 · 命运推力',badge:ym.map(m=>m.star+m.mutagen).join(' '),full:true,body:'生年四化是你这一世最强的四股推力，分别落在——<br>'+lines.join('<br>')};
+}
+// 格局检测（以命宫为主）
+function detectGeju(ps){
+  const {p,stars}=effStars(ps,'命宫');
+  const mj=stars.map(s=>s.name);
+  const mn=(p?p.minorStars:[]).map(s=>s.name);
+  const muts=(p?p.majorStars:[]).filter(s=>s.mutagen).map(s=>s.mutagen);
+  const has=a=>mj.includes(a),hasm=a=>mn.includes(a);
+  const g=[];
+  if(mj.some(s=>['七杀','破军','贪狼'].includes(s)))g.push({name:'杀破狼格',desc:'人生起伏大、开创型，不安现状、敢闯敢变，越动越有戏，忌守成'});
+  else if(mj.some(s=>['天机','天梁'].includes(s))||(has('天同')&&has('天梁')))g.push({name:'机月同梁格',desc:'适合稳定、规划、文职公门，按部就班、步步为营，宜专不宜赌'});
+  if(has('紫微')&&has('天府'))g.push({name:'紫府同宫',desc:'格局大、有领导相，天生管理者，宜居高位、掌大局'});
+  if(has('太阳')&&has('太阴'))g.push({name:'日月同宫',desc:'阴阳兼备、外热内柔，能量与情绪并盛，宜动静兼修'});
+  if(has('贪狼')&&(hasm('火星')||hasm('铃星')))g.push({name:'火贪/铃贪暴发格',desc:'有突发际遇、能爆发性成事，把握机会可一鸣惊人，但来得快去得也快'});
+  if(hasm('文昌')&&hasm('文曲'))g.push({name:'文星拱命',desc:'聪明文秀、才华出众，利读书、考运与文创'});
+  if(hasm('左辅')&&hasm('右弼'))g.push({name:'辅弼拱命',desc:'贵人多、助力强，有领导与组织之才'});
+  if(muts.includes('禄')&&hasm('禄存'))g.push({name:'双禄朝垣',desc:'财气厚、财源双至，善聚财，是富格底子'});
+  return g;
+}
+function palCard(ps,name,title,intro){const c=mkCard(ps,name,'core',title,{});c.body=intro+'<br>'+c.body;return c;}
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
 function mkCard(ps,name,dim,title,opts){
@@ -503,9 +535,15 @@ function autoReading(){
   const ps=CURRENT.chart.palaces;
   const cards=[];
   cards.push(mkCard(ps,'命宫','core','命盘底色 · 先天禀赋',{full:true,highlight:true,probabilities:[{label:'推算置信度',pct:66},{label:'校准后可达',pct:85}]}));
+  const geju=detectGeju(ps);
+  if(geju.length)cards.push({title:'格局 · 先天格局',badge:geju.map(g=>g.name).join('·'),full:true,teal:true,body:geju.map(g=>`<strong>${g.name}</strong>：${g.desc}`).join('<br>')});
+  const huaCard=huaPalaceCard(ps);
+  if(huaCard)cards.push(huaCard);
   cards.push(mkCard(ps,'官禄','career','事业 · 官禄宫',{teal:true}));
   cards.push(mkCard(ps,'财帛','wealth','财运 · 财帛宫',{}));
   cards.push(mkCard(ps,'夫妻','love','感情 · 夫妻宫',{}));
+  cards.push(palCard(ps,'福德','福德 · 精神与福分','福德宫看精神世界、兴趣与内心富足：'));
+  cards.push(palCard(ps,'迁移','迁移 · 在外际遇','迁移宫看出门在外的机遇与人际：'));
   // 当前大限
   const lp=ps.find(p=>p.earthlyBranch===CURRENT.limitBranch);
   if(lp){
