@@ -135,9 +135,12 @@
   .fb-dim{font-size:13px;color:var(--gold)}
   .fb-verdicts{display:flex;gap:6px}
   .vbtn{font-size:11px;padding:5px 10px;border-radius:3px;border:1px solid var(--hair-soft);background:var(--ink);color:var(--ivory-dim);cursor:pointer}
-  .vbtn.sel-hit{background:rgba(80,180,80,.2);color:#7CCC60;border-color:rgba(80,180,80,.5)}
+  .vbtn.sel-hit{background:rgba(80,180,80,.25);color:#7CCC60;border-color:rgba(80,180,80,.6)}
+  .vbtn.sel-lean{background:rgba(91,168,181,.22);color:var(--teal-light);border-color:rgba(91,168,181,.5)}
+  .vbtn.sel-mid{background:rgba(200,169,110,.2);color:var(--gold);border-color:rgba(200,169,110,.5)}
+  .vbtn.sel-weak{background:rgba(200,120,50,.2);color:#FF9060;border-color:rgba(200,120,50,.5)}
+  .vbtn.sel-miss{background:rgba(155,35,53,.22);color:#FF6B6B;border-color:rgba(155,35,53,.6)}
   .vbtn.sel-partial{background:rgba(200,169,110,.2);color:var(--gold);border-color:rgba(200,169,110,.5)}
-  .vbtn.sel-miss{background:rgba(155,35,53,.2);color:#FF6B6B;border-color:rgba(155,35,53,.5)}
   .fb-note{font-size:12px;padding:7px 10px}
   /* 内联反馈（卡片内） */
   .card-fb{display:flex;align-items:center;gap:7px;margin-top:18px;padding-top:14px;border-top:1px solid var(--hair-soft);flex-wrap:wrap}
@@ -414,7 +417,7 @@ function renderCards(cards){
     let cls='rcard';if(c.full)cls+=' full';if(c.highlight)cls+=' hl';if(c.teal)cls+=' teal';
     html+=`<div class="${cls}"><div class="rcard-title">${c.title||''}</div><div class="rcard-badge">${c.badge||''}</div><div class="rcard-body">${c.body||''}</div>`+
       `<div class="card-fb" data-dim="${dim}"><span class="lab">这段准吗</span>`+
-      `<button class="vbtn" data-v="hit">准</button><button class="vbtn" data-v="partial">部分</button><button class="vbtn" data-v="miss">不准</button>`+
+      `<button class="vbtn" data-v="hit">很准</button><button class="vbtn" data-v="lean">偏准</button><button class="vbtn" data-v="mid">中间</button><button class="vbtn" data-v="weak">不太准</button><button class="vbtn" data-v="miss">不准</button>`+
       `<input class="note" placeholder="补一句（可空）"></div></div>`;
   });
   html+='</div>';
@@ -432,51 +435,51 @@ function renderCards(cards){
 
 // ===== 规则解读引擎（十四主星 × 宫位，零后端自动生成）=====
 const STAR_LIB={
-  '紫微':{core:'帝王星，天生有气场和领导欲，爱面子、重格局、希望被认可',career:'适合做主导、管理、决策的角色，越在高位越自在',wealth:'格局大，财随地位和平台走，需有辅星助力',love:'要的是被尊重和体面，伴侣最好能撑得起你的场面'},
-  '天机':{core:'谋士星，脑子转得快、善谋划、爱思考，永远在想「下一步」',career:'适合策划、咨询、技术、参谋类，靠脑子吃饭',wealth:'财来自智慧和规划，忌频繁折腾、起念太快',love:'<span class="warn">想得多、心思细，容易因为想太多而内耗纠结</span>'},
-  '太阳':{core:'光热之星，热情、博爱、爱付出、好面子，天生想照亮别人',career:'适合台前、公众、有影响力的事业，越被看见越顺',wealth:'重名大于重利，财在声望与影响力里',love:'付出型，对感情大方，但有时大而化之、顾不上细节'},
-  '武曲':{core:'财星+将星，务实、刚毅、行动力强、重结果不重情调',career:'适合金融、实业、销售、技术、军警等硬派领域',wealth:'<strong>正财星，最会赚钱也最会理财</strong>，靠实干稳稳积累',love:'<span class="warn">偏直、不善表达，重行动轻甜言，需有意识地软化</span>'},
-  '天同':{core:'福星，温和、随性、知足、有点孩子气，福气在「不争」',career:'适合稳定、轻松、服务类，不爱厮杀，忌过于安逸',wealth:'财来得平顺，够用就好，留意被动与懒散',love:'纯粹、重情调，但偏被动，需要对方主动推一把'},
-  '廉贞':{core:'囚星+次桃花，复杂多面、有才情也有脾气，能交际能钻研',career:'适合需要交际、才艺、技术钻研的领域，能在复杂局里周旋',wealth:'财路活但有起伏，忌偏门与冲动',love:'<span class="warn">桃花重，感情浓烈也容易波动</span>'},
-  '天府':{core:'财库星，稳重、保守、爱安稳、有包容力，天生「守成之才」',career:'适合管理、财务、稳健经营，是让人放心的掌柜型',wealth:'<strong>财库星，善守善积累</strong>，理财保守稳健、越攒越厚',love:'求安稳，伴侣要可靠、能给安全感'},
-  '太阴':{core:'月亮星，内敛、细腻、直觉强、重情，主财富与不动产',career:'适合幕后、文艺、地产、需要细致用心的事，女命尤显',wealth:'主田宅不动产，财在长期积累与置业',love:'温柔重情，<span class="warn">但情绪起伏需要被理解和关照</span>'},
-  '贪狼':{core:'欲望星+桃花，多才多艺、欲望强、应酬能力顶级、爱热闹',career:'适合交际、娱乐、销售、才艺变现，人脉就是资源',wealth:'财路广但花得也快，<span class="warn">忌赌性与贪多</span>',love:'<span class="warn">桃花最旺，魅力强、选择多，定下来比遇到难</span>'},
-  '巨门':{core:'暗星+口星，善表达、爱钻研、嘴上功夫强，但易招口舌',career:'适合靠嘴吃饭：教育、销售、法律、咨询、自媒体',wealth:'财靠口才与专业沉淀，忌卷入是非',love:'沟通是钥匙也是雷区，<span class="warn">说清则甜，说不清就拧</span>'},
-  '天相':{core:'印星，诚信、重审美、爱协调、心软怕冲突，天生可托付',career:'适合辅佐、协调、审美相关，是极靠谱的二把手',wealth:'财平稳，靠信用和口碑积累',love:'重承诺、易心软，<span class="warn">怕冲突、容易替对方扛</span>'},
-  '天梁':{core:'荫星，稳重、有原则、爱照顾人、有长者气，逢凶能化吉',career:'适合管理、医疗、法律、监督、公职等需要担当的角色',wealth:'财平稳，不爱冒险，往往老来更佳',love:'有责任感、靠得住，<span class="warn">但有时偏说教、像家长</span>'},
-  '七杀':{core:'将星，刚烈、果断、独立、敢闯，开创力强、不服输',career:'适合开拓、创业、需要魄力的硬仗，越是逆境越有戏',wealth:'<span class="warn">财大起大落，靠拼搏不靠守</span>',love:'重行动、个性强，需要空间，忌被管太死'},
-  '破军':{core:'耗星+先锋，破旧立新、不安现状、敢破敢立，人生变动大',career:'适合变革、开创、不走寻常路的领域，旧框架里待不住',wealth:'<span class="warn">财起伏大，先破后立，忌一把梭</span>',love:'感情浓烈但多变，喜新易动，需要主动稳住'}
+  '紫微':{core:'天生爱体面、要尊严，骨子里想当那个「拿主意的人」，气场强、撑得起场面；缺点是<span class="warn">好面子、吃软不吃硬，听不进硬话</span>',career:'适合管理、决策、统筹——给你一摊子让你做主，比让你听人指挥强得多',wealth:'财随地位走，平台和身份越高、钱越跟着来；要有得力副手才成大格',love:'要被尊重、有面子，伴侣最好能让你有底气、撑得起你的台'},
+  '天机':{core:'脑子转得快、点子多，凡事爱想「下一步怎么办」，反应灵、善谋划；缺点是<span class="warn">想太多、起念快收念也快，容易内耗和犹豫</span>',career:'靠脑子吃饭——策划、咨询、技术、参谋、分析，越动脑越合适',wealth:'财来自智慧和方案，靠专业赚钱，忌频繁折腾、追涨杀跌',love:'心思细、爱琢磨对方，容易因为想太多而患得患失'},
+  '太阳':{core:'热情、大方、爱付出，天生想「照亮别人」、爱出头露脸，讲义气；缺点是<span class="warn">有时大而化之、顾不上细节</span>',career:'适合站台前、做有影响力和公众属性的事——越被看见越有劲',wealth:'重名甚于重利，钱在名气和影响力里，先有名后有利',love:'付出型、对感情慷慨，但容易忙于外面、忽略身边人的小情绪'},
+  '武曲':{core:'务实、刚毅、行动力强，认结果不认空话，是天生的「赚钱+做事」选手；缺点是<span class="warn">偏直、不善表达情感，容易显硬、不解风情</span>',career:'适合金融、实业、销售、技术、军警等硬派、看结果的领域',wealth:'<strong>正财星，最会赚也最会管钱</strong>，靠实干把家底一点点做厚',love:'爱你就替你做事、不爱说，重行动轻甜言，得有意识地软一点'},
+  '天同':{core:'温和、随性、知足，有点孩子气，福气在于「不争」、心态好；缺点是<span class="warn">偏安逸、被动，缺一点冲劲</span>',career:'适合稳定、轻松、服务类，不爱厮杀；忌太安逸而原地踏步',wealth:'财来得平顺、够花就好，靠安稳积累，别指望大起大落',love:'纯粹、重情调、好相处，但偏被动，常要对方主动推一把'},
+  '廉贞':{core:'复杂多面、有才情也有脾气，能交际也能钻研，骨子里有股劲；亦正亦邪，全看怎么用',career:'适合需要交际手腕或专业钻研的领域，能在复杂人事里周旋',wealth:'财路活但有起伏，靠本事和人脉，忌走偏门、忌冲动',love:'<span class="warn">桃花偏重、感情浓烈也容易起波澜，爱得用力</span>'},
+  '天府':{core:'稳重、保守、爱安稳，有包容力、能容人，是天生的「守成、管家」型；缺点是<span class="warn">偏保守、缺开创的狠劲</span>',career:'适合管理、财务、稳健经营，做让人放心的掌柜、二把手',wealth:'<strong>财库星，能存得住、越攒越厚</strong>，理财稳健、不爱冒险',love:'求安稳、要安全感，伴侣可靠比浪漫更重要'},
+  '太阴':{core:'内敛、细腻、直觉准、重感情，心思柔软、顾家；缺点是<span class="warn">情绪起伏大、容易多想和敏感</span>',career:'适合幕后、文艺、地产、需要细致用心的事，女命尤其显',wealth:'主不动产，财在长期积累和置业里，是慢钱稳钱',love:'温柔深情、为对方着想，但情绪需要被理解和照顾'},
+  '贪狼':{core:'欲望强、企图心大、多才多艺，应酬交际顶级——<strong>「欲望」指对成就、物质、感官和新鲜感都渴求；「桃花/魅力」指天生异性缘和感染力，往人群一站就有存在感</strong>；缺点是<span class="warn">想要的太多、容易样样浅尝</span>',career:'适合交际、娱乐、销售、才艺变现，人脉就是你的资源',wealth:'财路广但花得也凶，来钱快去钱也快，忌赌性和贪多',love:'<span class="warn">桃花最旺、魅力强、选择多，对你来说定下来比遇到难</span>'},
+  '巨门':{core:'嘴上功夫强、爱钻研、爱较真，靠「说和问」吃饭，刨根问底；缺点是<span class="warn">易招口舌是非、爱钻牛角尖</span>',career:'适合靠嘴和专业吃饭：教育、销售、法律、咨询、自媒体、主持',wealth:'财靠口才和专业沉淀，越懂行越值钱，忌卷进是非',love:'沟通是钥匙也是雷区——话说开了甜，憋着或说不清就拧'},
+  '天相':{core:'诚信、重审美、爱协调、心肠软，是那个「能托付、靠得住」的人；缺点是<span class="warn">耳根软、怕冲突、容易替别人扛</span>',career:'适合辅佐、协调、审美相关，是极可靠的好帮手、好二把手',wealth:'财平稳，靠信用和口碑慢慢积累',love:'重承诺、肯付出，但容易心软迁就、不好意思拒绝'},
+  '天梁':{core:'稳重、有原则、爱照顾人，有股长者气，逢难能化吉；缺点是<span class="warn">爱操心、偏说教，有时像个家长</span>',career:'适合管理、医疗、法律、监督、公职等需要担当和原则的角色',wealth:'财求稳不爱冒险，往往年纪越大越稳、越有',love:'有责任感、靠得住，但相处中容易把关心说成管教'},
+  '七杀':{core:'刚烈、果断、独立、敢闯，开创力强、不服输，是天生的将才；缺点是<span class="warn">脾气硬、易孤，来去都猛</span>',career:'适合开拓、创业、需要魄力的硬仗，越是逆境越能打',wealth:'<span class="warn">财大起大落，靠拼搏不靠守，敢赚也敢亏</span>',love:'个性强、要空间、重行动，忌被管太死、被黏太紧'},
+  '破军':{core:'敢破敢立、不安现状、喜欢推倒重来，是冲在最前的先锋；缺点是<span class="warn">变动大、任性，容易一冲动把好的也一起砸了</span>',career:'适合变革、开创、不走寻常路的领域，旧框架里待不住',wealth:'<span class="warn">财起伏大、先破后立，忌一把梭哈</span>',love:'感情浓烈但善变、喜新，需要新鲜感，得主动稳住自己'}
 };
-const HUA={'禄':'资源到位、有助力、走得顺','权':'有掌控力、能扛事、偏强势','科':'有名声、得贵人、利文书考运','忌':'有执念、易卡顿、是非缠身，需留意'};
+const HUA={'禄':'资源、机会、人缘都顺——想做的事容易找到助力和钱','权':'有掌控欲也有能力扛事、话语权强；用过头会变得强势、爱替人做主','科':'有好名声和贵人缘，利「文」的事：读书考证、写作、专业资质、口碑这类白纸黑字的成绩','忌':'你最在意、最放不下的那个点，也最容易卡住、起波折、生是非——不是坏事，是「执念与课题所在」'};
 const JI=['左辅','右弼','文昌','文曲','天魁','天钺'];
 const SHA=['擎羊','陀罗','火星','铃星','地空','地劫'];
-const JI_NOTE={'左辅':'得平辈相助','右弼':'得合作贵人','文昌':'添才学、利文书考运','文曲':'添才艺口才','天魁':'遇长辈贵人','天钺':'遇暗中贵人'};
-const SHA_NOTE={'擎羊':'易冲动、防刑伤是非','陀罗':'易拖延暗耗','火星':'性急、起伏大','铃星':'闷气积压','地空':'易空想、防破财','地劫':'多波折、防劫财'};
+const JI_NOTE={'左辅':'多平辈、同事帮衬，做事有人搭把手','右弼':'多合作贵人与人缘，关键时有人拉一把','文昌':'脑子清楚、利正规文书与考试——升学、考证、合同、论文这类「白纸黑字」的事','文曲':'口才、才艺、表达出众——演讲、写作、文艺、临场反应','天魁':'遇明贵人，长辈或上级在明面上提携','天钺':'遇暗贵人，暗中有人帮、机会悄悄找上门'};
+const SHA_NOTE={'擎羊':'做事冲、爱较真逞强；所谓「刑伤是非」是指容易磕碰外伤、口角官非、与人结怨——锋芒收一收更稳','陀罗':'容易拖延、纠结、暗自消耗，事情常拖着不了结、来回磨','火星':'脾气急、性子烈，事来得猛去得也快，情绪和运势起伏大','铃星':'闷、阴火——气往心里憋，容易内耗、暗自较劲','地空':'爱空想、不够落地，钱财和计划容易落空、打水漂','地劫':'多波折、易破耗，钱来得快去得也快，计划常被打断'};
 const COMBO={
- '紫微+天府':{core:'双帝星同宫，气派大、求稳重格局，天生的管理者，爱面子、重地位',career:'适合掌舵、管理、平台型事业，越在高位越稳',wealth:'财库厚、善积累，理财稳健保守',love:'要体面与尊重，伴侣需有分量'},
- '紫微+贪狼':{core:'帝王配桃花，欲望强、魅力足、好交际，能屈能伸有手腕',career:'适合交际、文创、需要魅力与手腕的领域',wealth:'财路广但讲排场，<span class="warn">忌挥霍</span>',love:'<span class="warn">桃花旺、风流，感情精彩但需自律</span>'},
- '紫微+天相':{core:'帝王配印星，端正稳重、重体面与规矩，是天生的辅政之才',career:'适合管理、协调、辅佐高层',wealth:'财稳，靠信誉积累',love:'重责任与体面，择偶看条件'},
- '紫微+七杀':{core:'帝王配将星，「化杀为权」，威严有魄力、能扛大事、说一不二',career:'适合开创、掌权、独当一面的硬仗',wealth:'财大敢拼，起伏中见格局',love:'强势、要主导权，不轻易低头'},
- '紫微+破军':{core:'帝王配先锋，敢破敢立、不守旧、开创力强但任性',career:'适合变革、创业、打破常规',wealth:'先破后立、起伏大',love:'浓烈而多变，需要新鲜感'},
- '天机+太阴':{core:'谋士配月亮，心思细密、多谋善感、想象力强，偏内秀',career:'适合策划、文案、研究、幕后智囊',wealth:'财靠脑力与规划，宜稳不宜频动',love:'体贴敏感，<span class="warn">易多想、情绪化</span>'},
- '天机+巨门':{core:'谋士配口星，口才与脑力俱佳、善辩善析，但易钻牛角尖',career:'适合口才分析类：法律、咨询、媒体',wealth:'靠专业与口才，<span class="warn">忌口舌是非</span>',love:'沟通多也争辩多，需要耐心'},
- '天机+天梁':{core:'谋士配荫星，聪明又有原则、爱出主意爱管事，机巧中带稳重',career:'适合参谋、监督、医法、教育',wealth:'财平稳，靠智慧与人望',love:'关心人但偏说教'},
- '太阳+太阴':{core:'日月同临，外热内柔、阴阳兼备，能量与情绪都起伏明显',career:'适合兼顾对外与对内、协调阴阳的角色',wealth:'财有起落，宜动静结合',love:'重情又多情绪，温暖但需稳定'},
- '太阳+巨门':{core:'「日照雷门」，善表达有感染力，靠口才发光但易招议论',career:'适合演讲、教育、外语、传媒、涉外',wealth:'财在口与名，<span class="warn">忌是非</span>',love:'热情直率，沟通是关键'},
- '太阳+天梁':{core:'光明磊落、有正义感与长者风，爱照顾人、爱主持公道',career:'适合公职、管理、医法、公益',wealth:'重名轻利，财平稳',love:'有担当但偏家长式'},
- '武曲+天府':{core:'财星配财库，最务实的「能赚＋会守」组合，稳健精明',career:'适合金融、财务、实业经营',wealth:'<strong>财运极强，能赚善守</strong>',love:'重实际，感情含蓄'},
- '武曲+贪狼':{core:'财星配欲望，行动力＋企图心，「先勤后发」的拼劲，多主中晚发',career:'适合销售、商贸、需冲劲与应酬的领域',wealth:'财来自打拼与人脉，越拼越旺',love:'现实又多欲，感情来得晚而热'},
- '武曲+天相':{core:'财星配印星，务实又讲信用，做事稳、重承诺',career:'适合财务、管理、需可靠度的岗位',wealth:'财稳，靠信誉积累',love:'踏实可靠但不够浪漫'},
- '武曲+七杀':{core:'双将星，刚硬果决、行动力爆表，能成大业但易孤刚',career:'适合开拓、军警、外科、硬派创业',wealth:'<span class="warn">财大起大落，靠魄力</span>',love:'个性刚强，需要柔化'},
- '武曲+破军':{core:'财星配先锋，敢破敢拼、不安现状，财与人生都大动',career:'适合变革、闯荡、白手起家',wealth:'<span class="warn">先破后立、波动大</span>',love:'浓烈直接，变动多'},
- '天同+太阴':{core:'福星配月亮，温柔、感性、爱享受、重情调，偏阴柔安逸',career:'适合文艺、服务、需细腻与亲和的事',wealth:'财来平顺，宜守',love:'浪漫深情，<span class="warn">但偏被动需呵护</span>'},
- '天同+巨门':{core:'福星配口星，嘴甜会聊但内心多虑，福中带些口舌',career:'适合靠沟通与亲和的服务、销售',wealth:'财平，<span class="warn">忌口舌是非</span>',love:'会哄人但易猜疑'},
- '天同+天梁':{core:'「机月同梁」之稳，随和有福、爱清闲、逢凶化吉',career:'适合稳定、文职、医护、公职',wealth:'财平稳，安稳是福',love:'温和有情，求安定'},
- '廉贞+天府':{core:'囚星配财库，能干有手腕又会守成，外圆内方',career:'适合管理、财务、需手腕的经营',wealth:'财稳，会算会守',love:'重实际也重情调'},
- '廉贞+贪狼':{core:'双桃花同宫，魅力与欲望拉满、交际广、才艺多，但易纵情',career:'适合娱乐、交际、才艺、公关',wealth:'财路活，<span class="warn">花得也凶</span>',love:'<span class="warn">桃花极旺，精彩但需自律</span>'},
- '廉贞+天相':{core:'囚星配印星，外圆内方、重规矩又能变通，是干练的协调者',career:'适合管理、协调、法务、行政',wealth:'财稳，重信用',love:'理性持重，重承诺'},
- '廉贞+七杀':{core:'囚星配将星，刚烈果敢、敢闯敢拼，「积富之人」但脾气硬',career:'适合开拓、外勤、硬派业务',wealth:'<span class="warn">财靠拼搏，起伏大</span>',love:'个性强烈，爱憎分明'},
- '廉贞+破军':{core:'囚星配先锋，叛逆敢破、不走寻常路，冲劲足但易冲动',career:'适合变革、创新、非主流领域',wealth:'<span class="warn">起伏大，先破后立</span>',love:'浓烈多变，需要稳住'}
+ '紫微+天府':{core:'两颗大星压阵，气派足、求稳又要格局，天生是「拿大主意、镇得住场」的管理者；<span class="warn">爱面子、看重身份地位</span>',career:'适合掌舵、管理、平台型事业，越在高位越稳',wealth:'财库厚、善积累，理财稳健保守',love:'要体面与尊重，伴侣需有分量'},
+ '紫微+贪狼':{core:'帝王星配桃花星：要面子、想主导，又欲望强、异性缘好、爱交际——<strong>「欲望」指对地位、物质、新鲜感的强烈追求；「魅力」指天生的吸引力和场面感</strong>；懂进退、会来事，<span class="warn">但想要的多、易讲排场</span>',career:'适合交际、文创、需要魅力与手腕的领域',wealth:'财路广但讲排场，<span class="warn">忌挥霍</span>',love:'<span class="warn">桃花旺、风流，感情精彩但需自律</span>'},
+ '紫微+天相':{core:'帝王星配印星：端正、稳重、讲规矩又重体面，是天生的「辅政之才」——能把事打理得井井有条、让人放心',career:'适合管理、协调、辅佐高层',wealth:'财稳，靠信誉积累',love:'重责任与体面，择偶看条件'},
+ '紫微+七杀':{core:'帝王星配将星，命理叫「化杀为权」：有威严、有魄力、扛得起大事、说一不二，是能独当一面的狠角色',career:'适合开创、掌权、独当一面的硬仗',wealth:'财大敢拼，起伏中见格局',love:'强势、要主导权，不轻易低头'},
+ '紫微+破军':{core:'帝王星配先锋星：敢破敢立、不守旧、开创力强，想干一票大的；<span class="warn">但也任性、好恶分明，容易把稳的也推翻</span>',career:'适合变革、创业、打破常规',wealth:'先破后立、起伏大',love:'浓烈而多变，需要新鲜感'},
+ '天机+太阴':{core:'脑子活配心思细：聪明、多想、想象力强，偏内秀安静，是「闷声出谋略」型；<span class="warn">但容易想太多、情绪化</span>',career:'适合策划、文案、研究、幕后智囊',wealth:'财靠脑力与规划，宜稳不宜频动',love:'体贴敏感，<span class="warn">易多想、情绪化</span>'},
+ '天机+巨门':{core:'脑子活配嘴皮子利：口才和分析力都强，爱辩、爱刨根问底；<span class="warn">但容易钻牛角尖、招口舌</span>',career:'适合口才分析类：法律、咨询、媒体',wealth:'靠专业与口才，<span class="warn">忌口舌是非</span>',love:'沟通多也争辩多，需要耐心'},
+ '天机+天梁':{core:'脑子活配老成持重：聪明又有原则、爱出主意爱管事，机灵里带着稳，常是身边那个「军师/和事佬」',career:'适合参谋、监督、医法、教育',wealth:'财平稳，靠智慧与人望',love:'关心人但偏说教'},
+ '太阳+太阴':{core:'太阳太阴同坐（日月同临）：外热内柔、阴阳两面都强——对外热情、对内细腻，<span class="warn">能量和情绪起伏都明显</span>',career:'适合兼顾对外与对内、协调阴阳的角色',wealth:'财有起落，宜动静结合',love:'重情又多情绪，温暖但需稳定'},
+ '太阳+巨门':{core:'命理叫「日照雷门」：表达力强、有感染力，靠一张嘴和专业发光；<span class="warn">但也容易招议论是非</span>，适合涉外、传播',career:'适合演讲、教育、外语、传媒、涉外',wealth:'财在口与名，<span class="warn">忌是非</span>',love:'热情直率，沟通是关键'},
+ '太阳+天梁':{core:'光明磊落、有正义感又有长者风：爱照顾人、爱主持公道，是那种「靠谱、扛事、讲原则」的人',career:'适合公职、管理、医法、公益',wealth:'重名轻利，财平稳',love:'有担当但偏家长式'},
+ '武曲+天府':{core:'财星配财库，最务实的「能赚＋会守」组合：会赚钱也存得住，精明稳健，是天生的理财好手',career:'适合金融、财务、实业经营',wealth:'<strong>财运极强，能赚善守</strong>',love:'重实际，感情含蓄'},
+ '武曲+贪狼':{core:'务实硬干配企图心：行动力＋欲望都强，命理讲「先勤后发」，多是<strong>中晚年发力、大器晚成</strong>，财靠打拼和人脉一点点拼出来',career:'适合销售、商贸、需冲劲与应酬的领域',wealth:'财来自打拼与人脉，越拼越旺',love:'现实又多欲，感情来得晚而热'},
+ '武曲+天相':{core:'务实配诚信：做事稳、重承诺、讲信用，是可靠的执行与管理者，不浪漫但靠得住',career:'适合财务、管理、需可靠度的岗位',wealth:'财稳，靠信誉积累',love:'踏实可靠但不够浪漫'},
+ '武曲+七杀':{core:'两颗将星同坐：刚硬、果决、行动力爆表，能成大事；<span class="warn">但脾气硬、易孤，得学着柔一点</span>',career:'适合开拓、军警、外科、硬派创业',wealth:'<span class="warn">财大起大落，靠魄力</span>',love:'个性刚强，需要柔化'},
+ '武曲+破军':{core:'财星配先锋：敢拼敢闯、不安现状，钱和人生都大开大合；<span class="warn">先破后立、波动大</span>，适合白手起家',career:'适合变革、闯荡、白手起家',wealth:'<span class="warn">先破后立、波动大</span>',love:'浓烈直接，变动多'},
+ '天同+太阴':{core:'福星配月亮：温柔、感性、爱享受、重情调，偏阴柔安逸，是「会生活、好相处」的人；<span class="warn">但偏被动、需要被呵护</span>',career:'适合文艺、服务、需细腻与亲和的事',wealth:'财来平顺，宜守',love:'浪漫深情，<span class="warn">但偏被动需呵护</span>'},
+ '天同+巨门':{core:'福星配口星：嘴甜会聊、亲和力好，但<span class="warn">内心爱多虑、易猜疑</span>，福气里夹点口舌',career:'适合靠沟通与亲和的服务、销售',wealth:'财平，<span class="warn">忌口舌是非</span>',love:'会哄人但易猜疑'},
+ '天同+天梁':{core:'命理「机月同梁」之稳：随和、有福、爱清闲，逢难能化吉，适合安稳路线、细水长流',career:'适合稳定、文职、医护、公职',wealth:'财平稳，安稳是福',love:'温和有情，求安定'},
+ '廉贞+天府':{core:'能干配财库：有手腕又会守成，外圆内方——既能在人事里周旋，又懂得稳稳攒下',career:'适合管理、财务、需手腕的经营',wealth:'财稳，会算会守',love:'重实际也重情调'},
+ '廉贞+贪狼':{core:'两颗桃花星同坐：魅力与欲望都拉满、交际广、才艺多——<strong>异性缘旺、舞台感强、对各种体验都渴求</strong>；<span class="warn">但也容易纵情、样样浅尝</span>',career:'适合娱乐、交际、才艺、公关',wealth:'财路活，<span class="warn">花得也凶</span>',love:'<span class="warn">桃花极旺，精彩但需自律</span>'},
+ '廉贞+天相':{core:'能干配诚信：外圆内方、重规矩又能变通，是干练又靠谱的协调者、管理者',career:'适合管理、协调、法务、行政',wealth:'财稳，重信用',love:'理性持重，重承诺'},
+ '廉贞+七杀':{core:'能干配将星：刚烈果敢、敢闯敢拼，命理称「积富之人」；<span class="warn">但脾气硬、爱憎分明</span>',career:'适合开拓、外勤、硬派业务',wealth:'<span class="warn">财靠拼搏，起伏大</span>',love:'个性强烈，爱憎分明'},
+ '廉贞+破军':{core:'能干配先锋：叛逆、敢破、不走寻常路，冲劲十足；<span class="warn">但易冲动、变动大，得稳住</span>',career:'适合变革、创新、非主流领域',wealth:'<span class="warn">起伏大，先破后立</span>',love:'浓烈多变，需要稳住'}
 };
 function comboGet(names,dim){if(names.length<2)return null;const a=names[0],b=names[1];const c=COMBO[a+'+'+b]||COMBO[b+'+'+a];return c?(c[dim]||c.core):null;}
 // 生年四化入十二宫断语
@@ -486,11 +489,12 @@ const HUA_PALACE={
  '科':{'命宫':'有声誉、气质佳，逢难有贵人','兄弟':'手足有成、彼此添光','夫妻':'伴侣有才名、感情斯文','子女':'子女聪慧有才','财帛':'财来得体面、理财有方','疾厄':'病也轻、逢医得救','迁移':'在外有名声、得贵人提携','仆役':'结交益友、朋友有水准','官禄':'事业有名望、利考试升迁','田宅':'家世清贵、居所讲究','福德':'品味高、精神世界丰富','父母':'长辈有文化、家教好'},
  '忌':{'命宫':'易钻牛角尖、自我消耗，需放宽','兄弟':'手足缘薄或合作生隙','夫妻':'感情多纠葛、易计较，需经营','子女':'为子女操心、桃花生扰','财帛':'财上易耗、卡现金流，忌冲动投资','疾厄':'有需留意的健康弱点，别硬扛','迁移':'在外易碰壁、奔波是非，慎远行决策','仆役':'朋友部属易拖累、防小人','官禄':'事业起伏、压力大、易卡瓶颈','田宅':'家宅不宁，或不动产生扰','福德':'想太多、易焦虑，精神需安顿','父母':'与长辈需磨合、防文书疏漏'}
 };
+const HUA_ACT={'禄':'把劲往这块使最容易顺、出成果，是你的「顺风口」','权':'主动争取这块的话语权、扛起来，会越做越有底气','科':'在这块拼专业、作品、口碑和资历，最容易出彩、被人记住','忌':'这块是你最在意也最容易卡的点——越早正视、把话说开越好，别硬扛'};
 function huaPalaceCard(ps){
   const ym=(CURRENT.chartExport&&CURRENT.chartExport.year_mutagens)||[];
   if(!ym.length)return null;
-  const lines=ym.map(m=>{const k=(m.mutagen||'').replace('化','');const pal=ps.find(p=>p.earthlyBranch===m.branch);const nm=pal?pal.name:'';const txt=(HUA_PALACE[k]&&HUA_PALACE[k][nm])||'综合判断';const cls=k==='忌'?'warn':'good';return `<em>${m.star}化${k}</em> 入【${nm}】：<span class="${cls}">${txt}</span>`;});
-  return {title:'生年四化 · 命运推力',badge:ym.map(m=>m.star+m.mutagen).join(' '),full:true,body:'生年四化是你这一世最强的四股推力，分别落在——<br>'+lines.join('<br>')};
+  const lines=ym.map(m=>{const k=(m.mutagen||'').replace('化','');const pal=ps.find(p=>p.earthlyBranch===m.branch);const nm=pal?pal.name:'';const txt=(HUA_PALACE[k]&&HUA_PALACE[k][nm])||'综合判断';const cls=k==='忌'?'warn':'good';return `<em>${m.star}化${k}</em> 入【${nm}】：<span class="${cls}">${txt}</span><br><span style="font-size:11.5px;color:var(--gold-dim)">↳ ${HUA_ACT[k]||''}</span>`;});
+  return {title:'生年四化 · 命运推力',badge:ym.map(m=>m.star+m.mutagen).join(' '),full:true,body:'「生年四化」是你这一世最强的四股内在推力——它告诉你天生在哪几块特别有劲、该往哪使力。分别落在——<br>'+lines.join('<br><br>')};
 }
 // 格局检测（以命宫为主）
 function detectGeju(ps){
@@ -581,7 +585,7 @@ function yingqiCard(chart){
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
 // 三方四正会照（对宫 + 三合二宫）
-const STAR_KW={'紫微':'尊贵主导','天机':'机变善谋','太阳':'热情外放','武曲':'刚毅财气','天同':'温和享福','廉贞':'多面才情','天府':'稳重财库','太阴':'细腻重情','贪狼':'欲望桃花','巨门':'口才钻研','天相':'诚信审美','天梁':'稳重荫庇','七杀':'刚烈开创','破军':'破立变动'};
+const STAR_KW={'紫微':'更要面子、更想主导和被认可','天机':'更爱动脑、想得更多更活','太阳':'更热情外放、爱付出爱出头','武曲':'更务实刚硬、更看重钱和结果','天同':'更随和爱享受、与世无争','廉贞':'更复杂多面、有才情也有脾气','天府':'更求稳、更会存钱顾家','太阴':'更细腻重情、更顾家也更敏感','贪狼':'欲望和异性缘更强、更爱热闹应酬','巨门':'嘴上功夫更强、爱钻研也易招口舌','天相':'更重信用体面、爱协调怕冲突','天梁':'更稳重有原则、爱照顾人','七杀':'更刚烈果断、敢闯敢拼','破军':'更求变求新、不安于现状'};
 function sfszNote(ps,name){
   const p=palByName(ps,name);if(!p)return '';
   const i=p.index;
@@ -593,10 +597,9 @@ function sfszNote(ps,name){
   const all=[...oppM,...triM].filter((v,idx,a)=>v&&a.indexOf(v)===idx);
   if(!all.length)return '';
   const kw=all.map(n=>STAR_KW[n]).filter(Boolean).slice(0,3);
-  let note=`<span style="color:var(--gold-dim)">三方四正会照：${all.join('、')}</span>`;
-  if(kw.length)note+=` —— 为本宫再添「${kw.join('、')}」之气`;
+  let note=`<span style="color:var(--gold-dim)">这一宫除了本身，还被旁边几颗星牵引（命理叫「三方四正会照」），意思是你在这方面还会：</span>`+(kw.length?kw.join('；'):all.join('、'));
   const oppJi=opp?opp.majorStars.filter(s=>s.mutagen==='忌').map(s=>s.name):[];
-  if(oppJi.length)note+=`<br><span class="warn">对宫 ${oppJi.join('、')}化忌冲照，此事易有牵绊、需多费心</span>`;
+  if(oppJi.length)note+=`<br><span class="warn">正对面有「化忌」冲过来——这件事你格外放不下、容易反复纠结，得多花心思去平衡</span>`;
   return note;
 }
 function mkCard(ps,name,dim,title,opts){
