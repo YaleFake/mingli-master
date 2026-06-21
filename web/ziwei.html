@@ -154,6 +154,7 @@
 <div class="starfield" aria-hidden="true"><span class="s1"></span><span class="s2"></span></div>
 <div class="container">
 
+  <div style="display:flex;justify-content:flex-end"><a href="hepan.html" style="font-size:12px;color:var(--gold);text-decoration:none;border:1px solid var(--hair);border-radius:20px;padding:6px 14px;letter-spacing:1px">双人合盘 →</a></div>
   <div class="header">
     <div class="header-eyebrow">紫微三合 × 中州派 × 真太阳时校正</div>
     <div class="header-title">命理解读师</div>
@@ -547,6 +548,36 @@ function liunianCard(chart){
   if(muts.length)body+='<br>今年的四股牵动力——<br>'+muts.join('<br>')+'<br><span class="warn">流年四化指出今年最该使力、与最该当心的领域。</span>';
   return {title:`流年 · ${yr}运势`,badge:ganzhi?ganzhi+'年':String(yr),full:true,teal:true,body};
 }
+// 流月 / 流日（通用）
+function scopeMutCard(chart,scope,title,when){
+  let hs;try{const t=new Date();hs=chart.horoscope(`${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`);}catch(e){return null;}
+  const it=hs&&hs[scope];if(!it)return null;
+  const ps=chart.palaces;const order=['禄','权','科','忌'];
+  const yp=(typeof it.index==='number')?ps[it.index]:null;
+  const tone=yp?`本命【${yp.name}】`:'';
+  const muts=(it.mutagen||[]).map((e,i)=>{const star=starName(e),k=order[i]||'';const hold=ps.find(p=>[...(p.majorStars||[]),...(p.minorStars||[])].some(s=>s.name===star));const nm=hold?hold.name:'';const txt=(HUA_PALACE[k]&&HUA_PALACE[k][nm])||'';const cls=k==='忌'?'warn':'good';return star?`${when}<em>${star}化${k}</em> 入【本命${nm}】：<span class="${cls}">${txt}</span>`:'';}).filter(Boolean);
+  const gz=(it.heavenlyStem||'')+(it.earthlyBranch||'');
+  let body=`${when}命宫行至${tone||'——'}。`+(muts.length?'<br>'+muts.join('<br>'):'');
+  return {title,badge:gz||when,full:true,body};
+}
+// 应期推算：大限四化 + 流年四化 叠同宫 → 哪一年应事
+const PAL_EVENT={'命宫':'本人有转折/大变动','兄弟':'手足或合作生变','夫妻':'婚姻感情大事（成婚或变动）','子女':'子女、合伙、桃花之事','财帛':'财务大波动（进财或破财）','疾厄':'健康需留意','迁移':'搬迁、外出、环境大变','仆役':'人脉、部属生变','官禄':'事业转折（升迁/转职/创业）','田宅':'置业、家宅、不动产变动','福德':'心态与价值观转变','父母':'长辈、文书、学业之事'};
+function yingqiCard(chart){
+  const ps=chart.palaces;const order=['禄','权','科','忌'];
+  const sp=name=>{const p=ps.find(x=>[...(x.majorStars||[]),...(x.minorStars||[])].some(s=>s.name===name));return p?p.name:null;};
+  const nowY=new Date().getFullYear();const rows=[];
+  for(let y=nowY;y<=nowY+9;y++){
+    let hs;try{hs=chart.horoscope(`${y}-6-1`);}catch(e){continue;}
+    const dec=hs&&hs.decadal,yr=hs&&hs.yearly;if(!dec||!yr)continue;
+    const decMap={};(dec.mutagen||[]).forEach((e,i)=>{const nm=sp(starName(e));if(nm)(decMap[nm]=decMap[nm]||[]).push(order[i]);});
+    const yrMap={};(yr.mutagen||[]).forEach((e,i)=>{const nm=sp(starName(e));if(nm)(yrMap[nm]=yrMap[nm]||[]).push(order[i]);});
+    Object.keys(yrMap).forEach(pal=>{if(decMap[pal]){const types=[...decMap[pal],...yrMap[pal]];rows.push({y,pal,types,hasJi:types.includes('忌'),gz:`${yr.heavenlyStem||''}${yr.earthlyBranch||''}`});}});
+  }
+  if(!rows.length)return null;
+  rows.sort((a,b)=>(b.hasJi-a.hasJi)||(a.y-b.y));
+  const lines=rows.slice(0,6).map(r=>{const ev=PAL_EVENT[r.pal]||'该领域有事';const tag=r.hasJi?'<span class="warn">⚠ 强应期 · 变动/了结</span>':'<span class="good">机遇引动</span>';return `<strong>${r.y}年（${r.gz}）</strong> · 【${r.pal}】${ev}　${tag}<br><span style="font-size:11px;color:var(--ivory-dim)">大限＋流年双四化（${r.types.join('')}）交会本宫</span>`;});
+  return {title:'应期推算 · 未来十年关键年',badge:`${rows.filter(r=>r.hasJi).length} 个强应期`,full:true,highlight:true,body:'当「大限四化」与「流年四化」叠在同一宫，那一年该宫的事最容易应验——这是看「哪一年出事」的命门。<br><br>'+lines.join('<br><br>')+'<br><br><span style="font-size:11px;color:var(--ivory-dim)">※ 含「忌」为强应期（变动/了结/纠缠），含「禄权」多为机遇。应吉应凶还需结合本宫善恶星，此处给方向与年份。</span>'};
+}
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
 // 三方四正会照（对宫 + 三合二宫）
@@ -610,6 +641,9 @@ function autoReading(){
     cards.push({title:'当前大限 · 课题',badge:names.join('·')||'空宫',body,teal:true});
   }
   const ln=liunianCard(CURRENT.chart);if(ln)cards.push(ln);
+  const yq=yingqiCard(CURRENT.chart);if(yq)cards.push(yq);
+  const lm=scopeMutCard(CURRENT.chart,'monthly','流月 · 本月运势','本月');if(lm)cards.push(lm);
+  const ld=scopeMutCard(CURRENT.chart,'daily','流日 · 今日运势','今日');if(ld)cards.push(ld);
   renderCards(cards);
   // 自动加一句免责
   $('readingArea').insertAdjacentHTML('beforeend','<p style="font-size:11px;color:var(--ivory-dim);opacity:.6;margin:-24px 0 32px;letter-spacing:1px">※ v1.0 规则引擎：十四主星 × 双星组合 × 四化入宫 × 六吉六煞 × 三方四正会照 × 格局 × 流年。命盘显示倾向与概率，非定论。深度个性化解读后续上线。</p>');
