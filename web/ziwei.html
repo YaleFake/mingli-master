@@ -493,25 +493,81 @@ function huaPalaceCard(ps){
 }
 // 格局检测（以命宫为主）
 function detectGeju(ps){
+  const cm=palByName(ps,'命宫');
   const {p,stars}=effStars(ps,'命宫');
   const mj=stars.map(s=>s.name);
   const mn=(p?p.minorStars:[]).map(s=>s.name);
   const muts=(p?p.majorStars:[]).filter(s=>s.mutagen).map(s=>s.mutagen);
-  const has=a=>mj.includes(a),hasm=a=>mn.includes(a);
+  const br=cm?cm.earthlyBranch:'';
+  // 命宫三方四正 主/辅星集合
+  let sMj=[...mj],sMn=[...mn];
+  if(cm){[4,6,8].forEach(off=>{const q=ps.find(x=>x.index===(cm.index+off)%12);if(q){sMj.push(...q.majorStars.map(s=>s.name));sMn.push(...q.minorStars.map(s=>s.name));}});}
+  const has=a=>mj.includes(a),hasm=a=>mn.includes(a),inS=a=>sMj.includes(a),inSm=a=>sMn.includes(a);
   const g=[];
   if(mj.some(s=>['七杀','破军','贪狼'].includes(s)))g.push({name:'杀破狼格',desc:'人生起伏大、开创型，不安现状、敢闯敢变，越动越有戏，忌守成'});
   else if(mj.some(s=>['天机','天梁'].includes(s))||(has('天同')&&has('天梁')))g.push({name:'机月同梁格',desc:'适合稳定、规划、文职公门，按部就班、步步为营，宜专不宜赌'});
   if(has('紫微')&&has('天府'))g.push({name:'紫府同宫',desc:'格局大、有领导相，天生管理者，宜居高位、掌大局'});
+  else if(inS('天府')&&inS('天相'))g.push({name:'府相朝垣',desc:'天府天相拱命，福厚稳重、衣食无忧，一生多得扶持'});
   if(has('太阳')&&has('太阴'))g.push({name:'日月同宫',desc:'阴阳兼备、外热内柔，能量与情绪并盛，宜动静兼修'});
+  if(has('太阳')&&has('巨门'))g.push({name:'巨日同宫',desc:'善表达有感染力，靠口才与专业发光，宜涉外、传播、教育'});
+  if(has('武曲')&&has('贪狼'))g.push({name:'武贪格',desc:'先勤后发、中晚年发达，财与事业靠拼搏积累，大器晚成'});
   if(has('贪狼')&&(hasm('火星')||hasm('铃星')))g.push({name:'火贪/铃贪暴发格',desc:'有突发际遇、能爆发性成事，把握机会可一鸣惊人，但来得快去得也快'});
+  if(inS('太阳')&&inS('天梁')&&inSm('文昌'))g.push({name:'阳梁昌禄格',desc:'利读书、考试、功名，适合走专业、学术、公职的进阶路线'});
+  if(has('紫微')&&(inSm('左辅')||inSm('右弼')||inSm('文昌')||inSm('文曲')||inSm('天魁')||inSm('天钺')))g.push({name:'君臣庆会',desc:'紫微得辅佐，贵人云集、易有领导成就，是上等格局'});
+  if(has('紫微')&&br==='午')g.push({name:'极向离明',desc:'紫微居午、帝星得位，气势旺、主贵显，宜担大任'});
+  if(has('太阳')&&br==='午')g.push({name:'日丽中天',desc:'太阳居午、光芒最盛，热情磊落、声名远播，宜在台前'});
+  if(has('太阴')&&(br==='亥'||br==='子'))g.push({name:'月朗天门',desc:'太阴居亥子、月明如水，细腻聪慧、富而雅，财与情皆厚'});
   if(hasm('文昌')&&hasm('文曲'))g.push({name:'文星拱命',desc:'聪明文秀、才华出众，利读书、考运与文创'});
   if(hasm('左辅')&&hasm('右弼'))g.push({name:'辅弼拱命',desc:'贵人多、助力强，有领导与组织之才'});
   if(muts.includes('禄')&&hasm('禄存'))g.push({name:'双禄朝垣',desc:'财气厚、财源双至，善聚财，是富格底子'});
   return g;
 }
 function palCard(ps,name,title,intro){const c=mkCard(ps,name,'core',title,{});c.body=intro+'<br>'+c.body;return c;}
+// 流年运势（基于 iztro horoscope）
+function starName(e){return typeof e==='string'?e:((e&&(e.name||e.star))||'');}
+function liunianCard(chart){
+  let hs;try{const t=new Date();hs=chart.horoscope(`${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`);}catch(e){return null;}
+  const y=hs&&hs.yearly;if(!y)return null;
+  const ps=chart.palaces;
+  const yr=new Date().getFullYear();
+  const ganzhi=`${y.heavenlyStem||''}${y.earthlyBranch||''}`;
+  let tone='';
+  const yp=(typeof y.index==='number')?ps[y.index]:null;
+  if(yp){const ms=yp.majorStars.map(s=>s.name);tone=`本命【${yp.name}】${ms.length?'（'+ms.join('·')+'）':'（空宫）'}`;}
+  const order=['禄','权','科','忌'];
+  const muts=(y.mutagen||[]).map((e,i)=>{
+    const star=starName(e),k=order[i]||'';
+    const hold=ps.find(p=>[...(p.majorStars||[]),...(p.minorStars||[])].some(s=>s.name===star));
+    const nm=hold?hold.name:'';
+    const txt=(HUA_PALACE[k]&&HUA_PALACE[k][nm])||'今年此星牵动该领域';
+    const cls=k==='忌'?'warn':'good';
+    return star?`流<em>${star}化${k}</em> 入【本命${nm}】：<span class="${cls}">${txt}</span>`:'';
+  }).filter(Boolean);
+  let body=`今年（${yr}${ganzhi?'·'+ganzhi+'年':''}）流年命宫行至${tone||'——'}，是全年的主基调。`;
+  if(muts.length)body+='<br>今年的四股牵动力——<br>'+muts.join('<br>')+'<br><span class="warn">流年四化指出今年最该使力、与最该当心的领域。</span>';
+  return {title:`流年 · ${yr}运势`,badge:ganzhi?ganzhi+'年':String(yr),full:true,teal:true,body};
+}
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
+// 三方四正会照（对宫 + 三合二宫）
+const STAR_KW={'紫微':'尊贵主导','天机':'机变善谋','太阳':'热情外放','武曲':'刚毅财气','天同':'温和享福','廉贞':'多面才情','天府':'稳重财库','太阴':'细腻重情','贪狼':'欲望桃花','巨门':'口才钻研','天相':'诚信审美','天梁':'稳重荫庇','七杀':'刚烈开创','破军':'破立变动'};
+function sfszNote(ps,name){
+  const p=palByName(ps,name);if(!p)return '';
+  const i=p.index;
+  const opp=ps.find(x=>x.index===(i+6)%12);
+  const t1=ps.find(x=>x.index===(i+4)%12);
+  const t2=ps.find(x=>x.index===(i+8)%12);
+  const oppM=opp?opp.majorStars.map(s=>s.name):[];
+  const triM=[...(t1?t1.majorStars.map(s=>s.name):[]),...(t2?t2.majorStars.map(s=>s.name):[])];
+  const all=[...oppM,...triM].filter((v,idx,a)=>v&&a.indexOf(v)===idx);
+  if(!all.length)return '';
+  const kw=all.map(n=>STAR_KW[n]).filter(Boolean).slice(0,3);
+  let note=`<span style="color:var(--gold-dim)">三方四正会照：${all.join('、')}</span>`;
+  if(kw.length)note+=` —— 为本宫再添「${kw.join('、')}」之气`;
+  const oppJi=opp?opp.majorStars.filter(s=>s.mutagen==='忌').map(s=>s.name):[];
+  if(oppJi.length)note+=`<br><span class="warn">对宫 ${oppJi.join('、')}化忌冲照，此事易有牵绊、需多费心</span>`;
+  return note;
+}
 function mkCard(ps,name,dim,title,opts){
   const {p,stars,borrowed}=effStars(ps,name);
   const names=stars.map(s=>s.name);
@@ -528,7 +584,8 @@ function mkCard(ps,name,dim,title,opts){
   const ji=minor.filter(n=>JI.includes(n)),sha=minor.filter(n=>SHA.includes(n));
   if(ji.length)body+=`<br><span class="good">加 ${ji.join('、')}：${ji.map(n=>JI_NOTE[n]).join('、')}</span>`;
   if(sha.length)body+=`<br><span class="warn">逢 ${sha.join('、')}：${sha.map(n=>SHA_NOTE[n]).join('、')}</span>`;
-  if(borrowed&&names.length)body='<span class="warn">本宫无主星，借对宫取象（仅参考）。</span><br>'+body;
+  const sn=sfszNote(ps,name);if(sn)body+='<br>'+sn;
+  if(borrowed&&names.length)body='<span class="warn">本宫无主星，须借对宫与三方会照之星综合论。</span><br>'+body;
   return Object.assign({title,badge:names.join('·')||'空宫',body},opts);
 }
 function autoReading(){
@@ -552,9 +609,10 @@ function autoReading(){
     let body=names.length?('此限走 <em>'+names.join('·')+'</em>，是这十年的主基调：<br>'+core+'<br><span class="warn">顺势深耕这组星的强项，规避其短板。</span>'):'此限宫无主星，借对宫并结合流年综合判断。';
     cards.push({title:'当前大限 · 课题',badge:names.join('·')||'空宫',body,teal:true});
   }
+  const ln=liunianCard(CURRENT.chart);if(ln)cards.push(ln);
   renderCards(cards);
   // 自动加一句免责
-  $('readingArea').insertAdjacentHTML('beforeend','<p style="font-size:11px;color:var(--ivory-dim);opacity:.6;margin:-24px 0 32px;letter-spacing:1px">※ 解读由规则引擎自动生成，命盘显示倾向与概率，非定论。深度个性化解读敬请期待。</p>');
+  $('readingArea').insertAdjacentHTML('beforeend','<p style="font-size:11px;color:var(--ivory-dim);opacity:.6;margin:-24px 0 32px;letter-spacing:1px">※ v1.0 规则引擎：十四主星 × 双星组合 × 四化入宫 × 六吉六煞 × 三方四正会照 × 格局 × 流年。命盘显示倾向与概率，非定论。深度个性化解读后续上线。</p>');
 }
 
 // ---------- 反馈 ----------
