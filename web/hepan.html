@@ -97,6 +97,7 @@
       <div class="field" id="b-hourwrap" style="display:none;margin-top:8px"><select id="b-hour"></select></div>
     </div>
   </div>
+  <div class="center" style="margin-bottom:14px"><label style="font-size:12px;color:var(--gold-dim);letter-spacing:1px;margin-right:10px">你们现在是</label><select id="rel-stage" style="display:inline-block;width:auto"><option value="crush">暧昧 / 有好感</option><option value="dating">恋人</option><option value="married">夫妻</option><option value="friend">朋友</option><option value="partner">合伙 / 搭档</option><option value="ex">已分手（想看复合）</option></select></div>
   <div class="hint">双方均在浏览器本地排盘，数据不上传。时辰会自动做真太阳时校正。</div>
   <div class="center"><button class="btn" id="goBtn">合盘 →</button> <span class="hint" id="status" style="display:inline">加载排盘引擎…</span></div>
 
@@ -112,9 +113,13 @@
     </div>
     <div class="section-title">关系定位</div>
     <div id="rRelation"></div>
-    <div class="section-title">四化互飞 · 吸引与互补</div>
+    <div class="section-title">未来走向</div>
+    <div id="rFuture"></div>
+    <div class="section-title">最大的坎</div>
+    <div id="rObstacle"></div>
+    <div class="section-title">彼此的吸引与互补</div>
     <div id="rGood"></div>
-    <div class="section-title">四化互飞 · 雷区</div>
+    <div class="section-title">容易起摩擦的地方</div>
     <div id="rWarn"></div>
     <div class="center" style="margin-top:24px"><button class="btn-ghost btn" id="resetBtn">重新合盘</button></div>
     <div class="footer"><div class="footer-quote">缘分是概率<br>相处是修行</div><div class="footer-note">合盘看的是倾向与课题，不是判决</div></div>
@@ -155,6 +160,52 @@ function palByBranch(chart,br){return chart.palaces.find(p=>p.earthlyBranch===br
 function palOfStar(chart,star){const p=chart.palaces.find(x=>[...(x.majorStars||[]),...(x.minorStars||[])].some(s=>s.name===star));return p?p.name:null;}
 const REL={'命宫':{s:8,t:'叠对方命宫——三观气场相近，像照镜子，易共鸣也易较劲'},'夫妻':{s:13,t:'落对方夫妻宫——天生的伴侣缘，最适合谈感情、走入婚姻'},'财帛':{s:9,t:'落对方财帛宫——与对方钱财有缘，利合伙、共同经营'},'官禄':{s:10,t:'落对方官禄宫——事业上的助力或搭档，利共事打拼'},'福德':{s:10,t:'落对方福德宫——精神契合、相处轻松，聊得来、待得住'},'迁移':{s:8,t:'落对方迁移宫——缘起于外出社交，是对方向外的贵人'},'子女':{s:7,t:'落对方子女宫——缘分偏亲密/桃花/合伙，相处随性'},'田宅':{s:9,t:'落对方田宅宫——能成家共居之缘，顾家、稳定'},'兄弟':{s:7,t:'落对方兄弟宫——像平辈知己/兄弟姐妹，讲义气但激情少'},'父母':{s:5,t:'落对方父母宫——偏照顾/管束，一方像长辈，易有代沟感'},'仆役':{s:5,t:'落对方仆役宫——更像朋友同事，亲密度需要刻意经营'},'疾厄':{s:4,t:'落对方疾厄宫——牵绊深、易互相消耗，相处节奏要留心'}};
 const FLY={'禄':{good:1,t:'带来资源与喜爱，是主动的吸引与给予'},'权':{good:0,t:'带来推动与主导，想替对方拿主意（用好是助力，过了是控制）'},'科':{good:1,t:'带来欣赏与体面，精神层面的看重'},'忌':{good:-1,t:'最上心也最易纠结——在意、计较、放不下，是雷区也是羁绊'}};
+const STAGE_LABEL={'crush':'你们现在：暧昧 / 有好感','dating':'你们现在：恋人','married':'你们现在：夫妻','friend':'你们现在：朋友','partner':'你们现在：合伙 / 搭档','ex':'你们现在：已分手（看复合）'};
+const PAL_PLAIN={'命宫':'你这个人本身','夫妻':'感情与婚姻','财帛':'金钱','官禄':'事业','田宅':'家庭与住处','福德':'情绪与精神','子女':'孩子或亲密','疾厄':'健康身体','迁移':'在外发展','仆役':'人际朋友','兄弟':'手足平辈','父母':'长辈'};
+function predictFuture(stage,s,an,bn){
+  const hi=s.score>=68,lo=s.score<52,inP=a=>['财帛','官禄','田宅'].includes(s.aN)||['财帛','官禄','田宅'].includes(s.bN);
+  if(stage==='crush'){
+    if(s.marriage||hi)return '<strong>有戏。</strong>盘上看，你们往恋人方向走的概率不低——主动制造独处和情绪联结，多半能捅破这层窗户纸。'+(s.ji?'只是过程会有点拉扯，别因为一时计较把好感耗没了。':'');
+    if(s.friend)return '更可能停在「聊得来的朋友」这一档。想突破成恋人，得刻意制造暧昧场景和情绪共鸣，否则容易一直卡在朋友区。';
+    return '需要时间和契机，目前缘分不浓也不淡。别急着定义关系，让相处自然加深。';
+  }
+  if(stage==='dating'){
+    if(s.marriage&&!lo)return '<strong>有走入婚姻的底子。</strong>方向是对的，盘上带正缘的味道；把节奏稳住、把现实问题谈拢，多半能修成正果。'+(s.ji?'婚前先把那个最容易吵的点谈清楚。':'');
+    if(s.ji>=2)return '感情浓，但<span class="warn">拉扯也多</span>——能不能长久，取决于你们处理矛盾的方式，而不是有没有爱。学会吵架不翻旧账，就稳了。';
+    if(s.friend)return '激情会慢慢褪成亲情/平淡，靠经营和共同经历，不是靠心动。能接受这种踏实，就能长久。';
+    return '稳步发展型，缘分需要共同经历来加深。不会轰轰烈烈，但也不容易散。';
+  }
+  if(stage==='married'){
+    if(s.marriage)return '婚姻有缘分根基，是「对的人」那一类。守住沟通、别冷战，长久不难。';
+    if(s.ji>=2)return '婚姻的功课在<span class="warn">磨合与计较</span>——越早正视那个反复出现的结、越早把话说开，越能熬过去。';
+    return '平稳型婚姻，靠经营和责任感，少了点浪漫但胜在踏实。';
+  }
+  if(stage==='friend'){
+    if(s.marriage||hi)return '其实你们有发展成恋人的潜质，<span class="good">差一个契机</span>——如果彼此有意思，可以试着往前一步。';
+    if(s.friend)return '适合做长久的朋友、搭档，这种缘分舒服、负担轻。强行发展成恋情未必更好。';
+    return '普通朋友缘，淡淡的，顺其自然就好。';
+  }
+  if(stage==='partner'){
+    if(inP()||hi)return '事业财运上有合作缘，能共事、能一起把盘子做大。先把分工和分钱规则定清楚，越清楚走得越远。';
+    if(s.ji)return '合作容易因为<span class="warn">钱或主导权</span>起摩擦——「先小人后君子」，白纸黑字写清楚，比讲交情管用。';
+    return '搭档缘一般，靠规则和契约维系，别掺太多私人感情进去。';
+  }
+  if(stage==='ex'){
+    if(s.ji>=2)return '你们是<span class="warn">藕断丝连</span>型——容易复合，也容易再吵回去。复合前先解决当初分手那个结，否则只是循环。';
+    if(s.marriage&&!lo)return '缘分未尽，<span class="good">有复合且走得更远的可能</span>。但要想清楚当初为什么散，别带着老问题回去。';
+    return '缘分偏淡了，硬回头多半还是老样子。往前看，对你更好。';
+  }
+  return '关系走向需结合更多信息综合判断。';
+}
+function maxObstacle(warn,s,an,bn){
+  if(warn.length){
+    const RANK={'夫妻':5,'命宫':5,'财帛':4,'福德':4,'子女':3,'官禄':3};
+    const w=[...warn].sort((a,b)=>(RANK[b.to]||1)-(RANK[a.to]||1))[0];
+    return `最大的坎在这：<strong>${w.from} 的「${w.star}化忌」落进 ${w.toName} 的【${w.to}】</strong>。说人话——${w.from} 会在「${PAL_PLAIN[w.to]||w.to}」这件事上，对 ${w.toName} 格外放不下、最爱较真和纠结，也最容易因此累、因此吵。<span class="warn">这是关系里最该当心、也最该把话说开的地方</span>：点破了是在乎，憋着了就成了内耗。`;
+  }
+  if(s.burden)return `最大的坎不在四化，而在相处模式：一方的命宫落进对方的「健康/长辈」类宫位，容易变成「一方总在照顾、操心另一方」，时间久了照顾的一方会累。<span class="warn">别让关心变成负担和管束。</span>`;
+  return `<span class="good">好消息：盘上没有明显的化忌互冲，你们之间少纠缠、负担轻。</span>最大的「坎」反而在现实层面——距离、节奏、外部压力，而不是性格相克。把现实问题理顺，关系本身很省心。`;
+}
 
 $('goBtn').addEventListener('click',async()=>{
   $('errBox').classList.remove('on');
@@ -193,6 +244,12 @@ function render(A,B){
   // 雷区（忌）
   const warn=[...aFly.filter(f=>f.hua==='忌').map(f=>({...f,from:an,toName:bn})),...bFly.filter(f=>f.hua==='忌').map(f=>({...f,from:bn,toName:an}))];
   $('rWarn').innerHTML=warn.length?warn.map(f=>`<div class="card warn-c"><div class="card-h">${f.from} → ${f.toName}　<span class="warn">雷区</span></div><div class="card-b"><em>${f.star}化忌</em> 飞入 ${f.toName} 的【${f.to}】：${f.from} 对 ${f.toName} 在此事上最上心、也最容易计较纠结。点破了是深情，憋着了是消耗——<span class="warn">把话说开是关键</span>。</div></div>`).join(''):'<div class="card good-c"><div class="card-b"><span class="good">没有明显的化忌互飞，相处中少纠缠、负担轻，是难得的省心组合。</span></div></div>';
+  // 未来走向 + 最大的坎
+  const stage=$('rel-stage').value;
+  const aN=aInB?aInB.name:'',bN=bInA?bInA.name:'';
+  const sig={marriage:(aN==='夫妻'||bN==='夫妻'),friend:(['仆役','兄弟'].includes(aN)||['仆役','兄弟'].includes(bN)),burden:(['疾厄','父母'].includes(aN)||['疾厄','父母'].includes(bN)),score,ji:warn.length,aN,bN};
+  $('rFuture').innerHTML=`<div class="card"><div class="card-h">${STAGE_LABEL[stage]||'你们的走向'}</div><div class="card-b">${predictFuture(stage,sig,an,bn)}</div></div>`;
+  $('rObstacle').innerHTML=`<div class="card warn-c"><div class="card-b">${maxObstacle(warn,sig,an,bn)}</div></div>`;
 }
 $('resetBtn').addEventListener('click',()=>{$('report').classList.remove('on');window.scrollTo({top:0,behavior:'smooth'});});
 </script>

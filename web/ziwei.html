@@ -548,9 +548,10 @@ function liunianCard(chart){
     const cls=k==='忌'?'warn':'good';
     return star?`流<em>${star}化${k}</em> 入【本命${nm}】：<span class="${cls}">${txt}</span>`:'';
   }).filter(Boolean);
-  let body=`今年（${yr}${ganzhi?'·'+ganzhi+'年':''}）流年命宫行至${tone||'——'}，是全年的主基调。`;
-  if(muts.length)body+='<br>今年的四股牵动力——<br>'+muts.join('<br>')+'<br><span class="warn">流年四化指出今年最该使力、与最该当心的领域。</span>';
-  return {title:`流年 · ${yr}运势`,badge:ganzhi?ganzhi+'年':String(yr),full:true,teal:true,body};
+  const mon=new Date().getMonth()+1;
+  let body=`今年（${yr}${ganzhi?'·'+ganzhi+'年':''}）流年命宫行至${tone||'——'}，是全年的主基调。<span style="color:var(--ivory-dim)">（已走到 ${mon} 月，下面这些重点尤其盯紧下半年）</span>`;
+  if(muts.length)body+='<br>今年的四股牵动力——<br>'+muts.join('<br>')+'<br><span class="warn">这指出今年最该使力、与最该当心的领域。</span>';
+  return {title:`流年 · 今年（${yr}）`,badge:ganzhi?ganzhi+'年':String(yr),full:true,teal:true,body};
 }
 // 流月 / 流日（通用）
 function scopeMutCard(chart,scope,title,when){
@@ -566,21 +567,25 @@ function scopeMutCard(chart,scope,title,when){
 }
 // 应期推算：大限四化 + 流年四化 叠同宫 → 哪一年应事
 const PAL_EVENT={'命宫':'本人有转折/大变动','兄弟':'手足或合作生变','夫妻':'婚姻感情大事（成婚或变动）','子女':'子女、合伙、桃花之事','财帛':'财务大波动（进财或破财）','疾厄':'健康需留意','迁移':'搬迁、外出、环境大变','仆役':'人脉、部属生变','官禄':'事业转折（升迁/转职/创业）','田宅':'置业、家宅、不动产变动','福德':'心态与价值观转变','父母':'长辈、文书、学业之事'};
-function yingqiCard(chart){
+function yingqiRows(chart,y0,y1){
   const ps=chart.palaces;const order=['禄','权','科','忌'];
   const sp=name=>{const p=ps.find(x=>[...(x.majorStars||[]),...(x.minorStars||[])].some(s=>s.name===name));return p?p.name:null;};
-  const nowY=new Date().getFullYear();const rows=[];
-  for(let y=nowY;y<=nowY+9;y++){
+  const rows=[];
+  for(let y=y0;y<=y1;y++){
     let hs;try{hs=chart.horoscope(`${y}-6-1`);}catch(e){continue;}
     const dec=hs&&hs.decadal,yr=hs&&hs.yearly;if(!dec||!yr)continue;
     const decMap={};(dec.mutagen||[]).forEach((e,i)=>{const nm=sp(starName(e));if(nm)(decMap[nm]=decMap[nm]||[]).push(order[i]);});
     const yrMap={};(yr.mutagen||[]).forEach((e,i)=>{const nm=sp(starName(e));if(nm)(yrMap[nm]=yrMap[nm]||[]).push(order[i]);});
     Object.keys(yrMap).forEach(pal=>{if(decMap[pal]){const types=[...decMap[pal],...yrMap[pal]];rows.push({y,pal,types,hasJi:types.includes('忌'),gz:`${yr.heavenlyStem||''}${yr.earthlyBranch||''}`});}});
   }
+  return rows;
+}
+function yingqiCardRange(chart,y0,y1,title,intro,limit,sortByJi){
+  let rows=yingqiRows(chart,y0,y1);
   if(!rows.length)return null;
-  rows.sort((a,b)=>(b.hasJi-a.hasJi)||(a.y-b.y));
-  const lines=rows.slice(0,6).map(r=>{const ev=PAL_EVENT[r.pal]||'该领域有事';const tag=r.hasJi?'<span class="warn">⚠ 强应期 · 变动/了结</span>':'<span class="good">机遇引动</span>';return `<strong>${r.y}年（${r.gz}）</strong> · 【${r.pal}】${ev}　${tag}<br><span style="font-size:11px;color:var(--ivory-dim)">大限＋流年双四化（${r.types.join('')}）交会本宫</span>`;});
-  return {title:'应期推算 · 未来十年关键年',badge:`${rows.filter(r=>r.hasJi).length} 个强应期`,full:true,highlight:true,body:'当「大限四化」与「流年四化」叠在同一宫，那一年该宫的事最容易应验——这是看「哪一年出事」的命门。<br><br>'+lines.join('<br><br>')+'<br><br><span style="font-size:11px;color:var(--ivory-dim)">※ 含「忌」为强应期（变动/了结/纠缠），含「禄权」多为机遇。应吉应凶还需结合本宫善恶星，此处给方向与年份。</span>'};
+  if(sortByJi)rows.sort((a,b)=>(b.hasJi-a.hasJi)||(b.y-a.y));else rows.sort((a,b)=>a.y-b.y);
+  const lines=rows.slice(0,limit).map(r=>{const ev=PAL_EVENT[r.pal]||'该领域有事';const tag=r.hasJi?'<span class="warn">⚠ 强应期 · 变动/了结</span>':'<span class="good">机遇/进展</span>';return `<strong>${r.y}年（${r.gz}）</strong> · 【${r.pal}】${ev}　${tag}`;});
+  return {title,badge:`${rows.filter(r=>r.hasJi).length} 个强应期`,full:true,highlight:true,body:intro+'<br><br>'+lines.join('<br><br>')+'<br><br><span style="font-size:11px;color:var(--ivory-dim)">※ 原理：「大限四化」与「流年四化」叠在同一宫，那年该宫的事最易应验。含「忌」是强应期（变动/了结/纠缠），含「禄权」多为机遇。给的是方向与年份，吉凶还要结合本宫星情。</span>'};
 }
 function palByName(ps,n){return ps.find(p=>p.name===n);}
 function effStars(ps,n){const p=palByName(ps,n);if(p&&p.majorStars.length)return{p,stars:p.majorStars,borrowed:false};const opp=p?ps.find(x=>x.index===((p.index+6)%12)):null;return{p,stars:opp?opp.majorStars:[],borrowed:true};}
@@ -643,8 +648,12 @@ function autoReading(){
     let body=names.length?('此限走 <em>'+names.join('·')+'</em>，是这十年的主基调：<br>'+core+'<br><span class="warn">顺势深耕这组星的强项，规避其短板。</span>'):'此限宫无主星，借对宫并结合流年综合判断。';
     cards.push({title:'当前大限 · 课题',badge:names.join('·')||'空宫',body,teal:true});
   }
+  const nowY=new Date().getFullYear();
+  const past=yingqiCardRange(CURRENT.chart,nowY-12,nowY-1,'应期回溯 · 过去的关键年','先看过去——这些年你在对应领域最容易遇上大事、大转折。<span class="good">先对一对：如果这些年份你都对得上，那后面的推算就更值得你信。</span>',6,true);
+  if(past)cards.push(past);
   const ln=liunianCard(CURRENT.chart);if(ln)cards.push(ln);
-  const yq=yingqiCard(CURRENT.chart);if(yq)cards.push(yq);
+  const future=yingqiCardRange(CURRENT.chart,nowY+1,nowY+9,'应期前瞻 · 未来的关键年','接下来这些年是关键节点——提前有数、提前布局，比临到了再慌强：',6,false);
+  if(future)cards.push(future);
   const lm=scopeMutCard(CURRENT.chart,'monthly','流月 · 本月运势','本月');if(lm)cards.push(lm);
   const ld=scopeMutCard(CURRENT.chart,'daily','流日 · 今日运势','今日');if(ld)cards.push(ld);
   renderCards(cards);
